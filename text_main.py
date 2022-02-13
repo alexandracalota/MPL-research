@@ -580,12 +580,12 @@ def main():
     logger.info(f"Model: BertClf {depth}x{widen_factor}")
     logger.info(f"Params: {sum(p.numel() for p in teacher_model.parameters()) / 1e6:.2f}M")
 
-    avg_student_model = None
-    if args.ema > 0:
-        avg_student_model = ModelEMA(student_model, args.ema)
-
     teacher_model.to(args.device)
     student_model.to(args.device)
+    avg_student_model = None
+    if args.ema > 0:
+        # args, model, args.ema_decay, device
+        avg_student_model = ModelEMA(student_model, args.ema)
 
     criterion = create_loss_fn(args)
 
