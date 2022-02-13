@@ -347,6 +347,9 @@ def evaluate(args, test_loader, model, criterion):
     with torch.no_grad():
         end = time.time()
         for step, data in enumerate(test_iter):
+            print(step)
+            print(data)
+            print(data[6])
             (text_x, segment_x, mask_x, img_x, tgt_x, _) = data
             data_time.update(time.time() - end)
 
