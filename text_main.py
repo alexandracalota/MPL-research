@@ -67,7 +67,7 @@ parser.add_argument('--threshold', default=0.95, type=float, help='pseudo label 
 parser.add_argument('--temperature', default=1, type=float, help='pseudo label temperature')
 parser.add_argument('--lambda-u', default=1, type=float, help='coefficient of unlabeled loss')
 parser.add_argument('--uda-steps', default=1, type=float, help='warmup steps of lambda-u')
-parser.add_argument("--randaug", nargs="+", type=int, help="use it like this. --randaug 2 10")
+parser.add_argument('--randaug', nargs="+", type=int, help="use it like this. --randaug 2 10")
 parser.add_argument("--amp", action="store_true", help="use 16-bit (mixed) precision")
 parser.add_argument('--world-size', default=-1, type=int, help='number of nodes for distributed training')
 parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
