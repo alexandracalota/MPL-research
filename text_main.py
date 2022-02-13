@@ -78,7 +78,6 @@ parser.add_argument("--scheduler", type=str, default="cosine", choices=["cosine"
 parser.add_argument("--hidden-sz", type=int, default=768)
 parser.add_argument("--bert_model", type=str, default="bert-base-uncased", choices=["bert-base-uncased", "bert-large-uncased"])
 parser.add_argument('--k-img', default=65536, type=int, help='number of labeled examples')
-parser.add_argument('--batch-size', default=64, type=int, help='train batchsize')
 parser.add_argument("--gradient-accumulation-steps", type=int, default=10)
 parser.add_argument('--epochs', default=100, type=int, help='number of total epochs to run')
 parser.add_argument("--model", type=str, default="mmbt", choices=["bow", "img", "bert", "concatbow", "concatbert", "mmbt"])
@@ -176,12 +175,6 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
         with amp.autocast(enabled=args.amp):
             batch_size = text_l.shape[0]
-
-            # TODO see in textTrain and do the same for student_model
-            # t_logits = teacher_model(t_images)
-            # t_logits_l = t_logits[:batch_size]
-            # t_logits_uw, t_logits_us = t_logits[batch_size:].chunk(2)
-            # del t_logits
 
             logits = teacher_model(texts, masks, segments)
             t_logits_l = logits[:batch_size]
