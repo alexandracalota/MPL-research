@@ -36,7 +36,7 @@ parser.add_argument('--dataset', default='cifar10', type=str, choices=['cifar10'
 parser.add_argument('--num-labeled', type=int, default=4000, help='number of labeled data')
 parser.add_argument("--expand-labels", action="store_true", help="expand labels to fit eval steps")
 # parser.add_argument('--total-steps', default=300000, type=int, help='number of total steps to run')
-parser.add_argument('--eval-step', default=1000, type=int, help='number of eval steps to run')
+parser.add_argument('--eval-step', default=10, type=int, help='number of eval steps to run')
 parser.add_argument('--start-step', default=0, type=int, help='manual epoch number (useful on restarts)')
 parser.add_argument('--workers', default=4, type=int, help='number of workers')
 parser.add_argument('--n-classes', default=10, type=int, help='number of classes')
@@ -346,7 +346,10 @@ def evaluate(args, test_loader, model, criterion):
     test_iter = tqdm(test_loader, disable=args.local_rank not in [-1, 0])
     with torch.no_grad():
         end = time.time()
-        for step, (text_x, segment_x, mask_x, tgt_x, _) in enumerate(test_iter):
+        for step, data in enumerate(test_iter):
+            print(data)
+            print(len(data))
+            (text_x, segment_x, mask_x, tgt_x, _) = data
             data_time.update(time.time() - end)
 
             text_x, segment_x, mask_x, img_x, tgt_x = text_x.to(args.device), segment_x.to(args.device), mask_x.to(args.device), img_x.to(args.device), tgt_x.to(args.device)
