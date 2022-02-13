@@ -29,16 +29,14 @@ logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--name', type=str, required=True, help='experiment name')
-parser.add_argument('--data-path', default='./data', type=str, help='data path')
+parser.add_argument('--data-path', default='/content/drive/MyDrive/Colab Notebooks/data', type=str, help='data path')
 parser.add_argument('--save-path', default='./checkpoint', type=str, help='save path')
-parser.add_argument('--dataset', default='cifar10', type=str,
-                    choices=['cifar10', 'cifar100'], help='dataset name')
+parser.add_argument('--dataset', default='cifar10', type=str, choices=['cifar10', 'cifar100'], help='dataset name')
 parser.add_argument('--num-labeled', type=int, default=4000, help='number of labeled data')
 parser.add_argument("--expand-labels", action="store_true", help="expand labels to fit eval steps")
 # parser.add_argument('--total-steps', default=300000, type=int, help='number of total steps to run')
 parser.add_argument('--eval-step', default=1000, type=int, help='number of eval steps to run')
-parser.add_argument('--start-step', default=0, type=int,
-                    help='manual epoch number (useful on restarts)')
+parser.add_argument('--start-step', default=0, type=int, help='manual epoch number (useful on restarts)')
 parser.add_argument('--workers', default=4, type=int, help='number of workers')
 parser.add_argument('--n-classes', default=10, type=int, help='number of classes')
 parser.add_argument('--resize', default=32, type=int, help='resize image')
@@ -56,8 +54,7 @@ parser.add_argument('--student-wait-steps', default=0, type=int, help='warmup st
 parser.add_argument('--grad-clip', default=0., type=float, help='gradient norm clipping')
 parser.add_argument('--resume', default='', type=str, help='path to checkpoint')
 parser.add_argument('--evaluate', action='store_true', help='only evaluate model on validation set')
-parser.add_argument('--finetune', action='store_true',
-                    help='only finetune model on labeled dataset')
+parser.add_argument('--finetune', action='store_true', help='only finetune model on labeled dataset')
 parser.add_argument('--finetune-epochs', default=125, type=int, help='finetune epochs')
 parser.add_argument('--finetune-batch-size', default=512, type=int, help='finetune batch size')
 parser.add_argument('--finetune-lr', default=1e-5, type=float, help='finetune learning late')
@@ -72,27 +69,22 @@ parser.add_argument('--lambda-u', default=1, type=float, help='coefficient of un
 parser.add_argument('--uda-steps', default=1, type=float, help='warmup steps of lambda-u')
 parser.add_argument("--randaug", nargs="+", type=int, help="use it like this. --randaug 2 10")
 parser.add_argument("--amp", action="store_true", help="use 16-bit (mixed) precision")
-parser.add_argument('--world-size', default=-1, type=int,
-                    help='number of nodes for distributed training')
-parser.add_argument("--local_rank", type=int, default=-1,
-                    help="For distributed training: local_rank")
+parser.add_argument('--world-size', default=-1, type=int, help='number of nodes for distributed training')
+parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
 
 # Parse Bert necessary args
 parser.add_argument("--optimizer", type=str, default="adam", choices=["sgd", "adam"])
 parser.add_argument("--scheduler", type=str, default="cosine", choices=["cosine", "plateau"])
 parser.add_argument("--hidden-sz", type=int, default=768)
-parser.add_argument("--bert_model", type=str, default="bert-base-uncased",
-                    choices=["bert-base-uncased", "bert-large-uncased"])
+parser.add_argument("--bert_model", type=str, default="bert-base-uncased", choices=["bert-base-uncased", "bert-large-uncased"])
 parser.add_argument('--k-img', default=65536, type=int, help='number of labeled examples')
 parser.add_argument('--batch-size', default=64, type=int, help='train batchsize')
 parser.add_argument("--gradient-accumulation-steps", type=int, default=10)
 parser.add_argument('--epochs', default=100, type=int, help='number of total epochs to run')
-parser.add_argument("--model", type=str, default="mmbt",
-                    choices=["bow", "img", "bert", "concatbow", "concatbert", "mmbt"])
+parser.add_argument("--model", type=str, default="mmbt", choices=["bow", "img", "bert", "concatbow", "concatbert", "mmbt"])
 parser.add_argument('--warmup', default=0.1, type=float, help='warmup epochs (unlabeled data based)')
 parser.add_argument("--lr_factor", type=float, default=0.5)
 parser.add_argument("--lr_patience", type=int, default=2)
-parser.add_argument("--data_path", type=str, default='/')
 parser.add_argument('--text_soft_aug', type=str, default='none', choices=['none', 'back_translate', 'eda'])
 parser.add_argument('--text_hard_aug', type=str, default='none', choices=['none', 'back_translate', 'eda'])
 parser.add_argument('--text_prob_aug', type=float, default=1.0, help='probability of using augmented text')
