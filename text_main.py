@@ -80,7 +80,7 @@ parser.add_argument("--bert_model", type=str, default="bert-base-uncased", choic
 parser.add_argument('--k-img', default=65536, type=int, help='number of labeled examples')
 parser.add_argument("--gradient-accumulation-steps", type=int, default=10)
 parser.add_argument('--epochs', default=100, type=int, help='number of total epochs to run')
-parser.add_argument("--model", type=str, default="mmbt", choices=["bow", "img", "bert", "concatbow", "concatbert", "mmbt"])
+parser.add_argument("--model", type=str, default="bert", choices=["bow", "img", "bert", "concatbow", "concatbert", "mmbt"])
 parser.add_argument('--warmup', default=0.1, type=float, help='warmup epochs (unlabeled data based)')
 parser.add_argument("--lr_factor", type=float, default=0.5)
 parser.add_argument("--lr_patience", type=int, default=2)
