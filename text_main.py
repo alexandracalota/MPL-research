@@ -85,8 +85,8 @@ parser.add_argument("--model", type=str, default="bert", choices=["bow", "img", 
 parser.add_argument('--warmup', default=0.1, type=float, help='warmup epochs (unlabeled data based)')
 parser.add_argument("--lr_factor", type=float, default=0.5)
 parser.add_argument("--lr_patience", type=int, default=2)
-parser.add_argument('--text_soft_aug', type=str, default='none', choices=['none', 'back_translate', 'eda'])
-parser.add_argument('--text_hard_aug', type=str, default='none', choices=['none', 'back_translate', 'eda'])
+parser.add_argument('--text_soft_aug', type=str, default='none', choices=['none', 'back_translation', 'eda'])
+parser.add_argument('--text_hard_aug', type=str, default='none', choices=['none', 'back_translation', 'eda'])
 parser.add_argument('--text_prob_aug', type=float, default=1.0, help='probability of using augmented text')
 parser.add_argument("--task", type=str, default="informative", choices=[
     "mmimdb", "vsnli", "food101", 'disaster_data', 'samples_4k_mmbt', 'informative', 'damage', 'humanitarian',

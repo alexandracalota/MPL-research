@@ -45,8 +45,8 @@ class TextDataset(Dataset):
             text = row['Text']
             return self.get_sentence_and_segment(text)
 
-        elif text_aug == 'back_translate':
-            text = random.choice(row['back_translate'])
+        elif text_aug == 'back_translation':
+            text = random.choice(row['back_translation'])
             return self.get_sentence_and_segment(text)
 
         elif text_aug == 'eda':
