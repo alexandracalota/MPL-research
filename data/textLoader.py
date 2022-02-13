@@ -1,23 +1,18 @@
-import functools
-import json
 import os
 from collections import Counter
 
 import pandas as pd
 
 import torch
-import torchvision.transforms as transforms
 from pytorch_pretrained_bert import BertTokenizer
 
-from data.myDataset import JsonlDataset
 from data.vocab import Vocab
 
-from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
-from torch.utils.data.distributed import DistributedSampler
+from torch.utils.data import DataLoader
 from data.textDataset import TextDataset
 
-
 TEXT_SIZE = 224
+
 
 def get_vocab(args):
     vocab = Vocab()
@@ -38,7 +33,8 @@ def get_labels_and_frequencies(path):
 
     return list(label_freqs.keys()), label_freqs
 
-def get_datasets(args):    
+
+def get_datasets(args):
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=True).tokenize
 
     args.labels, args.label_freqs = get_labels_and_frequencies(
@@ -86,7 +82,7 @@ def get_datasets(args):
         text_aug1='none',
         text_aug2='none'
     )
-    
+
     return labeled_dataset, unlabeled_dataset, dev_dataset, test_dataset
 
 
@@ -105,8 +101,9 @@ def prepare_text_segment_mask(batch, index_text, index_seg):
         sentence_tensor[i_batch, :length] = tokens[:length]
         segment_tensor[i_batch, :length] = segment[:length]
         mask_tensor[i_batch, :length] = 1
-    
+
     return sentence_tensor, segment_tensor, mask_tensor
+
 
 def collate_function(batch):
     sentence_tensor1, segment_tensor1, mask_tensor1 = prepare_text_segment_mask(batch, 0, 1)
@@ -119,7 +116,7 @@ def collate_function(batch):
 
 def get_data_loaders(args):
     labeled_dataset, unlabeled_dataset, dev_dataset, test_dataset = get_datasets(args)
-    
+
     if args.local_rank == 0:
         torch.distributed.barrier()
 
@@ -127,35 +124,34 @@ def get_data_loaders(args):
         labeled_dataset,
         batch_size=args.batch_size,
         shuffle=True,
-        num_workers=args.n_workers,
+        num_workers=args.workers,
         collate_fn=collate_function,
         drop_last=True
     )
-    
+
     unlabeled_loader = DataLoader(
         unlabeled_dataset,
         shuffle=True,
-        batch_size=args.batch_size*args.mu,
-        num_workers=args.num_workers,
+        batch_size=args.batch_size * args.mu,
+        num_workers=args.workers,
         collate_fn=collate_function,
         drop_last=True
     )
-    
+
     dev_loader = DataLoader(
         dev_dataset,
-        batch_size=args.batch_size*(args.mu+1),
+        batch_size=args.batch_size * (args.mu + 1),
         shuffle=False,
-        num_workers=args.n_workers,
+        num_workers=args.workers,
         collate_fn=collate_function,
     )
-    
+
     test_loader = DataLoader(
         test_dataset,
-        batch_size=args.batch_size*(args.mu+1),
+        batch_size=args.batch_size * (args.mu + 1),
         shuffle=False,
-        num_workers=args.n_workers,
+        num_workers=args.workers,
         collate_fn=collate_function,
     )
 
     return labeled_loader, unlabeled_loader, dev_loader, test_loader
-

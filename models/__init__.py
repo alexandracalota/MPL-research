@@ -8,20 +8,9 @@
 #
 
 from models.bert import BertClf
-from models.bow import GloveBowClf
-from models.concat_bert import MultimodalConcatBertClf
-from models.concat_bow import  MultimodalConcatBowClf
-from models.image import ImageClf
-from models.mmbt import MultimodalBertClf
-
 
 MODELS = {
     "bert": BertClf,
-    "bow": GloveBowClf,
-    "concatbow": MultimodalConcatBowClf,
-    "concatbert": MultimodalConcatBertClf,
-    "img": ImageClf,
-    "mmbt": MultimodalBertClf,
 }
 
 
