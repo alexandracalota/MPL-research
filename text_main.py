@@ -346,16 +346,18 @@ def evaluate(args, test_loader, model, criterion):
     test_iter = tqdm(test_loader, disable=args.local_rank not in [-1, 0])
     with torch.no_grad():
         end = time.time()
-        for step, (images, targets) in enumerate(test_iter):
+        for step, (text_x, segment_x, mask_x, tgt_x, _) in enumerate(test_iter):
             data_time.update(time.time() - end)
-            batch_size = images.shape[0]
-            images = images.to(args.device)
-            targets = targets.to(args.device)
-            with amp.autocast(enabled=args.amp):
-                outputs = model(images)
-                loss = criterion(outputs, targets)
 
-            acc1, acc5 = accuracy(outputs, targets, (1, 5))
+            text_x, segment_x, mask_x, img_x, tgt_x = text_x.to(args.device), segment_x.to(args.device), mask_x.to(args.device), img_x.to(args.device), tgt_x.to(args.device)
+            logits_x = model(text_x, mask_x, segment_x, img_x)
+
+            batch_size = text_x.shape[0]
+            with amp.autocast(enabled=args.amp):
+                outputs = model(logits_x)
+                loss = criterion(outputs, tgt_x)
+
+            acc1, acc5 = accuracy(outputs, tgt_x, (1, 5))
             losses.update(loss.item(), batch_size)
             top1.update(acc1[0], batch_size)
             top5.update(acc5[0], batch_size)
