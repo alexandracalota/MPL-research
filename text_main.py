@@ -88,6 +88,9 @@ parser.add_argument("--lr_patience", type=int, default=2)
 parser.add_argument('--text_soft_aug', type=str, default='none', choices=['none', 'back_translate', 'eda'])
 parser.add_argument('--text_hard_aug', type=str, default='none', choices=['none', 'back_translate', 'eda'])
 parser.add_argument('--text_prob_aug', type=float, default=1.0, help='probability of using augmented text')
+parser.add_argument("--task", type=str, default="informative", choices=[
+    "mmimdb", "vsnli", "food101", 'disaster_data', 'samples_4k_mmbt', 'informative', 'damage', 'humanitarian',
+    'humanitarian1k', 'humanitarianO', 'informativeO', 'humanitarianM', 'humanitarianR', 'imdb'])
 
 parser.add_argument('--validation', type=bool, default=False)
 
@@ -577,11 +580,12 @@ def main():
     logger.info(f"Model: BertClf {depth}x{widen_factor}")
     logger.info(f"Params: {sum(p.numel() for p in teacher_model.parameters()) / 1e6:.2f}M")
 
-    teacher_model.to(args.device)
-    student_model.to(args.device)
     avg_student_model = None
     if args.ema > 0:
         avg_student_model = ModelEMA(student_model, args.ema)
+
+    teacher_model.to(args.device)
+    student_model.to(args.device)
 
     criterion = create_loss_fn(args)
 
