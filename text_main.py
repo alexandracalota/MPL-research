@@ -356,11 +356,11 @@ def evaluate(args, test_loader, model, criterion):
             data_time.update(time.time() - end)
 
             text_x, segment_x, mask_x, img_x, tgt_x = text_x.to(args.device), segment_x.to(args.device), mask_x.to(args.device), img_x.to(args.device), tgt_x.to(args.device)
-            logits_x = model(text_x, mask_x, segment_x)
+            #logits_x = model(text_x, mask_x, segment_x)
 
             batch_size = text_x.shape[0]
             with amp.autocast(enabled=args.amp):
-                outputs = model(logits_x)
+                outputs = model(text_x, mask_x, segment_x)
                 loss = criterion(outputs, tgt_x)
 
             acc1, acc5 = accuracy(outputs, tgt_x, (1, 5))
