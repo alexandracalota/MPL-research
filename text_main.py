@@ -349,7 +349,8 @@ def evaluate(args, test_loader, model, criterion):
         for step, data in enumerate(test_iter):
             print("step: ", step)
             print("data: ", data)
-            print("data[5]: ", data[5])
+            print("data[5]: ", data[4])
+            print("data[6]: ", data[5])
             print("data[6]: ", data[6])
             print("data len: ", len(data))
             (text_x, segment_x, mask_x, img_x, tgt_x, unknown, _) = data
@@ -361,6 +362,7 @@ def evaluate(args, test_loader, model, criterion):
             batch_size = text_x.shape[0]
             with amp.autocast(enabled=args.amp):
                 outputs = model(text_x, mask_x, segment_x)
+                print(len(outputs))
                 loss = criterion(outputs, tgt_x)
 
             acc1, acc5 = accuracy(outputs, tgt_x, (1, 5))
