@@ -347,24 +347,14 @@ def evaluate(args, test_loader, model, criterion):
     with torch.no_grad():
         end = time.time()
         for step, data in enumerate(test_iter):
-            print("\nstep: ", step)
-            print("data: ", data)
-            print("data[4]: ", data[4])
-            print("data[5]: ", data[5])
-            print("data[6]: ", data[6])
-            print("data len: ", len(data))
-            print("lens: ", len(data[0]), len(data[1]), len(data[2]), len(data[3]), len(data[4]), len(data[5]), len(data[6]))
             (text_x, segment_x, mask_x, text_y, segment_y, mask_y, tgt_x) = data
             data_time.update(time.time() - end)
 
             text_x, segment_x, mask_x, tgt_x = text_x.to(args.device), segment_x.to(args.device), mask_x.to(args.device), tgt_x.to(args.device)
-            #logits_x = model(text_x, mask_x, segment_x)
 
             batch_size = text_x.shape[0]
             with amp.autocast(enabled=args.amp):
                 logits_x = model(text_x, mask_x, segment_x)
-                print(len(logits_x))
-                print(len(tgt_x))
                 loss = criterion(logits_x, tgt_x)
 
             acc1, acc5 = accuracy(logits_x, tgt_x, (1, 5))
