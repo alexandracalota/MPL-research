@@ -347,12 +347,13 @@ def evaluate(args, test_loader, model, criterion):
     with torch.no_grad():
         end = time.time()
         for step, data in enumerate(test_iter):
-            print("step: ", step)
+            print("\nstep: ", step)
             print("data: ", data)
             print("data[5]: ", data[4])
             print("data[6]: ", data[5])
             print("data[6]: ", data[6])
             print("data len: ", len(data))
+            print("lens: ", len(data[0]), len(data[1]), len(data[2]), len(data[3]), len(data[4]), len(data[5]), len(data[6]))
             (text_x, segment_x, mask_x, img_x, tgt_x, unknown, _) = data
             data_time.update(time.time() - end)
 
@@ -363,7 +364,8 @@ def evaluate(args, test_loader, model, criterion):
             with amp.autocast(enabled=args.amp):
                 outputs = model(text_x, mask_x, segment_x)
                 print(len(outputs))
-                loss = criterion(outputs, tgt_x)
+                print(len(tgt_x))
+                loss = criterion(outputs, unknown)
 
             acc1, acc5 = accuracy(outputs, tgt_x, (1, 5))
             losses.update(loss.item(), batch_size)
