@@ -349,9 +349,10 @@ def evaluate(args, test_loader, model, criterion):
         for step, data in enumerate(test_iter):
             print("step: ", step)
             print("data: ", data)
+            print("data[5]: ", data[5])
             print("data[6]: ", data[6])
             print("data len: ", len(data))
-            (text_x, segment_x, mask_x, img_x, tgt_x, _) = data
+            (text_x, segment_x, mask_x, img_x, unknown, tgt_x, _) = data
             data_time.update(time.time() - end)
 
             text_x, segment_x, mask_x, img_x, tgt_x = text_x.to(args.device), segment_x.to(args.device), mask_x.to(args.device), img_x.to(args.device), tgt_x.to(args.device)
