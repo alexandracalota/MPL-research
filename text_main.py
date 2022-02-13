@@ -91,6 +91,7 @@ parser.add_argument('--text_prob_aug', type=float, default=1.0, help='probabilit
 parser.add_argument("--task", type=str, default="informative", choices=[
     "mmimdb", "vsnli", "food101", 'disaster_data', 'samples_4k_mmbt', 'informative', 'damage', 'humanitarian',
     'humanitarian1k', 'humanitarianO', 'informativeO', 'humanitarianM', 'humanitarianR', 'imdb'])
+parser.add_argument("--max_seq_len", type=int, default=512)
 
 parser.add_argument('--validation', type=bool, default=False)
 
