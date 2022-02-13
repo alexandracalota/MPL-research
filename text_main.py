@@ -365,7 +365,7 @@ def evaluate(args, test_loader, model, criterion):
                 logits_x = model(text_x, mask_x, segment_x)
                 print(len(logits_x))
                 print(len(tgt_x))
-                loss = criterion(logits_x, unknown)
+                loss = criterion(logits_x, tgt_x)
 
             acc1, acc5 = accuracy(logits_x, tgt_x, (1, 5))
             losses.update(loss.item(), batch_size)
