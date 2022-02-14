@@ -194,7 +194,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             max_probs, hard_pseudo_label = torch.max(soft_pseudo_label, dim=-1)
             mask = max_probs.ge(args.threshold).float()
             t_loss_u = torch.mean(
-                -(soft_pseudo_label * torch.log_softmax(t_logits_u_soft, dim=-1)).sum(dim=-1) * mask
+                -(soft_pseudo_label * torch.log_softmax(t_logits_u_hard, dim=-1)).sum(dim=-1) * mask
             )
             weight_u = args.lambda_u * min(1., (step + 1) / args.uda_steps)
             t_loss_uda = t_loss_l + weight_u * t_loss_u
