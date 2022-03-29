@@ -168,7 +168,6 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
         data_time.update(time.time() - end)
 
-        # TODO: replace what labeled/unlabeled_iter.next() returns with what __getitem__ from TestDataset returns
         texts = torch.cat((text_l, text_u_soft, text_u_hard)).to(args.device)
         segments = torch.cat((segment_l, segment_u_soft, segment_u_hard)).to(args.device)
         masks = torch.cat((mask_l, mask_u_soft, mask_u_hard)).to(args.device)
@@ -199,7 +198,6 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             weight_u = args.lambda_u * min(1., (step + 1) / args.uda_steps)
             t_loss_uda = t_loss_l + weight_u * t_loss_u
 
-            # TODO change
             s_logits = student_model(s_texts, s_masks, s_segments)
             s_logits_l = s_logits[:batch_size]
             s_logits_us = s_logits[batch_size:]
@@ -357,7 +355,7 @@ def evaluate(args, test_loader, model, criterion):
                 logits_x = model(text_x, mask_x, segment_x)
                 loss = criterion(logits_x, tgt_x)
 
-            acc1, acc5 = accuracy(logits_x, tgt_x, (1, 5))
+            acc1, acc5 = accuracy(logits_x, tgt_x, (1, 4))
             losses.update(loss.item(), batch_size)
             top1.update(acc1[0], batch_size)
             top5.update(acc5[0], batch_size)
