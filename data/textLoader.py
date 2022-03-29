@@ -43,7 +43,7 @@ def get_datasets(args):
     vocab = get_vocab(args)
     args.vocab = vocab
     args.vocab_sz = vocab.vocab_sz
-    args.n_classes = len(args.labels)
+    args.num_classes = len(args.labels)
 
     labeled_dataset = TextDataset(
         os.path.join(args.data_path, args.task, f"{args.train_file}.csv"),

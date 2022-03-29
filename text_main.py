@@ -199,6 +199,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             t_loss_uda = t_loss_l + weight_u * t_loss_u
 
             s_logits = student_model(s_texts, s_masks, s_segments)
+
+            if step % 100 == 0:
+                print(s_logits)
+
             s_logits_l = s_logits[:batch_size]
             s_logits_us = s_logits[batch_size:]
             del s_logits
