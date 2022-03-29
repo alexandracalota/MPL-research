@@ -7,6 +7,7 @@ import torch
 from torch import distributed as dist
 from torch import nn
 from torch.nn import functional as F
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
