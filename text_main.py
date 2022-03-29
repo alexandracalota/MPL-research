@@ -353,7 +353,10 @@ def evaluate(args, test_loader, model, criterion):
             batch_size = text_x.shape[0]
             with amp.autocast(enabled=args.amp):
                 logits_x = model(text_x, mask_x, segment_x)
+                print('\n')
                 print(logits_x)
+                print('\n')
+                print(tgt_x)
                 loss = criterion(logits_x, tgt_x)
 
             acc1, acc5 = accuracy(logits_x, tgt_x, (1, 4))
