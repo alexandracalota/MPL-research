@@ -381,10 +381,6 @@ def evaluate(args, test_loader, model, criterion):
             with amp.autocast(enabled=args.amp):
                 logits_x = model(text_x, mask_x, segment_x)
                 loss = criterion(logits_x, tgt_x)
-                print('\n')
-                print(logits_x)
-                print('\n')
-                print(tgt_x)
 
                 outputs.append(logits_x)
                 targets.append(tgt_x)
