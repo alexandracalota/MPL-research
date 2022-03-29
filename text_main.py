@@ -32,7 +32,7 @@ parser.add_argument('--name', type=str, required=True, help='experiment name')
 parser.add_argument('--data-path', default='/content/drive/MyDrive/Colab Notebooks/data', type=str, help='data path')
 parser.add_argument('--train-file', default='train', type=str, help='train file name')
 parser.add_argument('--save-path', default='./checkpoint', type=str, help='save path')
-parser.add_argument('--dataset', default='cifar10', type=str, choices=['cifar10', 'cifar100'], help='dataset name')
+parser.add_argument('--dataset', default='cifar10', type=str, choices=['cifar10', 'cifar100', ''], help='dataset name')
 parser.add_argument('--num-labeled', type=int, default=4000, help='number of labeled data')
 parser.add_argument("--expand-labels", action="store_true", help="expand labels to fit eval steps")
 # parser.add_argument('--total-steps', default=300000, type=int, help='number of total steps to run')
@@ -202,7 +202,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             s_logits = student_model(s_texts, s_masks, s_segments)
 
             if step % 100 == 0:
+                print('\n')
                 print(s_logits)
+                print('\n')
+                print(targets)
 
             s_logits_l = s_logits[:batch_size]
             s_logits_us = s_logits[batch_size:]
@@ -605,12 +608,6 @@ def main():
     if args.local_rank == 0:
         torch.distributed.barrier()
 
-    train_sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
-
-    if args.dataset == "cifar10":
-        depth, widen_factor = 28, 2
-    elif args.dataset == 'cifar100':
-        depth, widen_factor = 28, 8
 
     if args.local_rank not in [-1, 0]:
         torch.distributed.barrier()
@@ -622,7 +619,6 @@ def main():
     if args.local_rank == 0:
         torch.distributed.barrier()
 
-    logger.info(f"Model: BertClf {depth}x{widen_factor}")
     logger.info(f"Params: {sum(p.numel() for p in teacher_model.parameters()) / 1e6:.2f}M")
 
     teacher_model.to(args.device)
