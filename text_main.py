@@ -198,14 +198,12 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             weight_u = args.lambda_u * min(1., (step + 1) / args.uda_steps)
             t_loss_uda = t_loss_l + weight_u * t_loss_u
 
-            logger.info('s_texts shape: ', s_texts.shape(), 's_masks shape: ', s_masks.shape(), 's_segments shape: ', s_segments.shape())
             s_logits = student_model(s_texts, s_masks, s_segments)
 
             if step % 100 == 0:
-                print('\n')
-                print(s_logits)
-                print('\n')
-                print(targets)
+                logger.info('s_texts shape: ', s_texts.shape(), 's_masks shape: ', s_masks.shape(), 's_segments shape: ', s_segments.shape())
+                logger.info(s_logits)
+                logger.info(targets)
 
             s_logits_l = s_logits[:batch_size]
             s_logits_us = s_logits[batch_size:]
