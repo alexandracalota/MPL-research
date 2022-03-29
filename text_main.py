@@ -121,7 +121,6 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                teacher_model, student_model, avg_student_model, criterion,
                t_optimizer, s_optimizer, t_scheduler, s_scheduler, t_scaler, s_scaler):
     logger.info("***** Running Training *****")
-    logger.info(f"   Task = {args.dataset}@{args.num_labeled}")
     logger.info(f"   Total steps = {args.total_steps}")
 
     if args.world_size > 1:
@@ -199,6 +198,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             weight_u = args.lambda_u * min(1., (step + 1) / args.uda_steps)
             t_loss_uda = t_loss_l + weight_u * t_loss_u
 
+            logger.info('s_texts shape: ', s_texts.shape(), 's_masks shape: ', s_masks.shape(), 's_segments shape: ', s_segments.shape())
             s_logits = student_model(s_texts, s_masks, s_segments)
 
             if step % 100 == 0:
