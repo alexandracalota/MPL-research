@@ -39,7 +39,7 @@ parser.add_argument("--expand-labels", action="store_true", help="expand labels 
 parser.add_argument('--eval-step', default=1000, type=int, help='number of eval steps to run')
 parser.add_argument('--start-step', default=0, type=int, help='manual epoch number (useful on restarts)')
 parser.add_argument('--workers', default=4, type=int, help='number of workers')
-parser.add_argument('--n-classes', default=10, type=int, help='number of classes')
+parser.add_argument('--num-classes', default=4, type=int, help='number of classes')
 parser.add_argument('--resize', default=32, type=int, help='resize image')
 parser.add_argument('--batch-size', default=64, type=int, help='train batch size')
 parser.add_argument('--teacher-dropout', default=0, type=float, help='dropout on last dense layer')
@@ -656,6 +656,7 @@ def main():
             output_device=args.local_rank, find_unused_parameters=True)
 
     labeled_loader, unlabeled_loader, valid_loader, test_loader = get_data_loaders(args)
+
     # add arg to check if I want to override/write test loader with validation loader
     if args.validation:
         test_loader = valid_loader
