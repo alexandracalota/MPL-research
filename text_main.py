@@ -201,8 +201,8 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             s_logits = student_model(s_texts, s_masks, s_segments)
 
             if step % 100 == 0:
-                logger.info('s_texts shape: ', s_texts.shape, 's_masks shape: ', s_masks.shape, 's_segments shape: ', s_segments.shape)
-                logger.info('logits shape: ', s_logits.shape, 'targets shape: ', targets.shape)
+                logger.info(f's_texts shape: {s_texts.shape} s_masks shape: {s_masks.shape} s_segments shape: {s_segments.shape}')
+                logger.info(f'logits shape: {s_logits.shape} targets shape: {targets.shape}')
                 logger.info(s_logits)
                 logger.info(targets)
 
@@ -399,6 +399,8 @@ def evaluate(args, test_loader, model, criterion):
                 f"Batch: {batch_time.avg:.2f}s. Loss: {losses.avg:.4f}. "
                 f"top1: {top1.avg:.2f}. top5: {top5.avg:.2f}. ")
 
+        outputs = torch.cat(outputs)
+        targets = torch.cat(targets)
         b_metrics = all_metrics(outputs, targets)
 
         stats = {
