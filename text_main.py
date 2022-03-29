@@ -4,6 +4,7 @@ import math
 import os
 import random
 import time
+import json
 
 import numpy as np
 import torch
@@ -22,8 +23,7 @@ from tqdm import tqdm
 from data.textLoader import get_data_loaders
 from models import get_model
 from models.models import ModelEMA
-from utils import (AverageMeter, accuracy, create_loss_fn,
-                   save_checkpoint, reduce_tensor, model_load_state_dict)
+from utils import (AverageMeter, accuracy, create_loss_fn, save_checkpoint, reduce_tensor, model_load_state_dict, all_metrics)
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,7 @@ parser.add_argument("--task", type=str, default="informative", choices=[
 parser.add_argument("--max_seq_len", type=int, default=512)
 
 parser.add_argument('--validation', type=bool, default=False)
+parser.add_argument('--stats_dir', type=str, default='checkpoint')
 
 
 def set_seed(args):
@@ -288,11 +289,27 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                            "train/6.mask": mean_mask.avg})
 
                 test_model = avg_student_model if avg_student_model is not None else student_model
-                test_loss, top1, top5 = evaluate(args, test_loader, test_model, criterion)
+                test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion)
 
                 args.writer.add_scalar("test/loss", test_loss, args.num_eval)
                 args.writer.add_scalar("test/acc@1", top1, args.num_eval)
                 args.writer.add_scalar("test/acc@5", top5, args.num_eval)
+
+                args.writer.add_scalar('precision_label0', all_metrics['None/precision'][0], step)
+                args.writer.add_scalar('precision_label1', all_metrics['None/precision'][1], step)
+                args.writer.add_scalar('precision_label2', all_metrics['None/precision'][2], step)
+                args.writer.add_scalar('precision_label3', all_metrics['None/precision'][3], step)
+
+                args.writer.add_scalar('recall_label0', all_metrics['None/recall'][0], step)
+                args.writer.add_scalar('recall_label1', all_metrics['None/recall'][1], step)
+                args.writer.add_scalar('recall_label2', all_metrics['None/recall'][2], step)
+                args.writer.add_scalar('recall_label3', all_metrics['None/recall'][3], step)
+
+                args.writer.add_scalar('f1_label0', all_metrics['None/f1'][0], step)
+                args.writer.add_scalar('f1_label1', all_metrics['None/f1'][1], step)
+                args.writer.add_scalar('f1_label2', all_metrics['None/f1'][2], step)
+                args.writer.add_scalar('f1_label3', all_metrics['None/f1'][3], step)
+
                 wandb.log({"test/loss": test_loss,
                            "test/acc@1": top1,
                            "test/acc@5": top5})
@@ -339,6 +356,9 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
 
 def evaluate(args, test_loader, model, criterion):
+    outputs = []
+    targets = []
+
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -357,11 +377,14 @@ def evaluate(args, test_loader, model, criterion):
             batch_size = text_x.shape[0]
             with amp.autocast(enabled=args.amp):
                 logits_x = model(text_x, mask_x, segment_x)
+                loss = criterion(logits_x, tgt_x)
                 print('\n')
                 print(logits_x)
                 print('\n')
                 print(tgt_x)
-                loss = criterion(logits_x, tgt_x)
+
+                outputs.append(logits_x)
+                targets.append(tgt_x)
 
             acc1, acc5 = accuracy(logits_x, tgt_x, (1, 4))
             losses.update(loss.item(), batch_size)
@@ -374,8 +397,21 @@ def evaluate(args, test_loader, model, criterion):
                 f"Batch: {batch_time.avg:.2f}s. Loss: {losses.avg:.4f}. "
                 f"top1: {top1.avg:.2f}. top5: {top5.avg:.2f}. ")
 
+        b_metrics = all_metrics(outputs, targets)
+
+        stats = {
+            'outputs': outputs.tolist(),
+            'preds': outputs.argmax(axis=1).tolist(),
+            'targets': targets.tolist(),
+            'scores': b_metrics,
+        }
+        stats_file = os.path.dirname(args.stats_dir)
+        stats_file = os.path.join(stats_file, 'stats_file.json')
+        with open(stats_file, 'w') as f:
+            json.dump(stats, f)
+
         test_iter.close()
-        return losses.avg, top1.avg, top5.avg
+        return losses.avg, top1.avg, top5.avg, b_metrics
 
 
 def finetune(args, train_loader, test_loader, model, criterion):

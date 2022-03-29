@@ -1,8 +1,8 @@
+from collections import OrderedDict
 import logging
 import os
 import shutil
-from collections import OrderedDict
-
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 import torch
 from torch import distributed as dist
 from torch import nn
@@ -110,3 +110,24 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
+
+def all_metrics(output, target):
+    output = output.argmax(dim=1).cpu()
+    target = target.cpu()
+    all_metrics = {}
+    eval_methods = {
+        'precision': precision_score,
+        'recall': recall_score,
+        'f1': f1_score,
+    }
+
+    average = None
+    for name, func in eval_methods.items():
+        score = func(target, output, average=average)
+        if isinstance(score, np.ndarray):
+            score = score.tolist()
+        all_metrics[f'{average}/{name}'] = score
+    all_metrics['accuracy'] = accuracy_score(target, output)
+
+    return all_metrics
