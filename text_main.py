@@ -201,7 +201,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             s_logits = student_model(s_texts, s_masks, s_segments)
 
             if step % 100 == 0:
-                logger.info(f's_texts shape: {s_texts.shape} s_masks shape: {s_masks.shape} s_segments shape: {s_segments.shape}')
+                logger.info(f'\ns_texts shape: {s_texts.shape} s_masks shape: {s_masks.shape} s_segments shape: {s_segments.shape}')
                 logger.info(f'logits shape: {s_logits.shape} targets shape: {targets.shape}')
                 logger.info(s_logits)
                 logger.info(targets)
