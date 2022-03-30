@@ -298,20 +298,20 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 args.writer.add_scalar("test/acc@1", top1, args.num_eval)
                 args.writer.add_scalar("test/acc@5", top5, args.num_eval)
 
-                args.writer.add_scalar('precision_label0', bin_test['None/precision'][0], step)
-                args.writer.add_scalar('precision_label1', bin_test['None/precision'][1], step)
-                args.writer.add_scalar('precision_label2', bin_test['None/precision'][2], step)
-                args.writer.add_scalar('precision_label3', bin_test['None/precision'][3], step)
+                args.writer.add_scalar('precision/label0', bin_test['None/precision'][0], step)
+                args.writer.add_scalar('precision/label1', bin_test['None/precision'][1], step)
+                args.writer.add_scalar('precision/label2', bin_test['None/precision'][2], step)
+                args.writer.add_scalar('precision/label3', bin_test['None/precision'][3], step)
 
-                args.writer.add_scalar('recall_label0', bin_test['None/recall'][0], step)
-                args.writer.add_scalar('recall_label1', bin_test['None/recall'][1], step)
-                args.writer.add_scalar('recall_label2', bin_test['None/recall'][2], step)
-                args.writer.add_scalar('recall_label3', bin_test['None/recall'][3], step)
+                args.writer.add_scalar('recall/label0', bin_test['None/recall'][0], step)
+                args.writer.add_scalar('recall/label1', bin_test['None/recall'][1], step)
+                args.writer.add_scalar('recall/label2', bin_test['None/recall'][2], step)
+                args.writer.add_scalar('recall/label3', bin_test['None/recall'][3], step)
 
-                args.writer.add_scalar('f1_label0', bin_test['None/f1'][0], step)
-                args.writer.add_scalar('f1_label1', bin_test['None/f1'][1], step)
-                args.writer.add_scalar('f1_label2', bin_test['None/f1'][2], step)
-                args.writer.add_scalar('f1_label3', bin_test['None/f1'][3], step)
+                args.writer.add_scalar('f1/label0', bin_test['None/f1'][0], step)
+                args.writer.add_scalar('f1/label1', bin_test['None/f1'][1], step)
+                args.writer.add_scalar('f1/label2', bin_test['None/f1'][2], step)
+                args.writer.add_scalar('f1/label3', bin_test['None/f1'][3], step)
 
                 wandb.log({"test/loss": test_loss,
                            "test/acc@1": top1,
