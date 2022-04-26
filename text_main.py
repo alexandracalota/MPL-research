@@ -531,31 +531,39 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
                 test_model = avg_student_model if avg_student_model is not None else student_model
 
-                train_loss, top1train, top5train, bin_train = evaluate(args, labeled_loader, test_model, criterion, "train")
+                train_loss, top1train, top5train, bin_train = evaluate(args, labeled_loader, test_model, criterion, "Train")
                 plot_metrics(args, train_loss, top1train, top5train, bin_train, step, "train")
 
-                test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion, "test")
+                test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion, "Test")
                 plot_metrics(args, test_loss, top1, top5, bin_test, step, "test")
 
                 wandb.log({"test/loss": test_loss,
                            "test/acc@1": top1,
                            "test/acc@5": top5})
 
-                is_best = top1 > args.best_top1
+                is_best = top1train > args.best_top1train
                 if is_best:
-                    args.best_top1 = top1
-                    args.best_top5 = top5
+                    args.best_top1train = top1train
+                    args.best_top5train = top5train
 
-                logger.info(f"top-1 acc: {top1:.2f}")
-                logger.info(f"Best top-1 acc: {args.best_top1:.2f}")
+                is_best = top1 > args.best_top1test
+                if is_best:
+                    args.best_top1test = top1
+                    args.best_top5test = top5
+
+                logger.info(f"top-1 acc train: {top1train:.2f}")
+                logger.info(f"Best top-1 acc train: {args.best_top1train:.2f}")
+
+                logger.info(f"top-1 acc test: {top1:.2f}")
+                logger.info(f"Best top-1 acc test: {args.best_top1test:.2f}")
 
                 save_checkpoint(args, {
                     'step': step + 1,
                     'teacher_state_dict': teacher_model.state_dict(),
                     'student_state_dict': student_model.state_dict(),
                     'avg_state_dict': avg_student_model.state_dict() if avg_student_model is not None else None,
-                    'best_top1': args.best_top1,
-                    'best_top5': args.best_top5,
+                    'best_top1': args.best_top1test,
+                    'best_top5': args.best_top5test,
                     'teacher_optimizer': t_optimizer.state_dict(),
                     'student_optimizer': s_optimizer.state_dict(),
                     'teacher_scheduler': t_scheduler.state_dict(),
@@ -565,8 +573,8 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 }, is_best)
 
     if args.local_rank in [-1, 0]:
-        args.writer.add_scalar("result/test_acc@1", args.best_top1)
-        wandb.log({"result/test_acc@1": args.best_top1})
+        args.writer.add_scalar("result/test_acc@1", args.best_top1test)
+        wandb.log({"result/test_acc@1": args.best_top1test})
     # finetune
     del t_scaler, t_scheduler, t_optimizer, teacher_model, unlabeled_loader
     del s_scaler, s_scheduler, s_optimizer
@@ -830,8 +838,10 @@ def get_cosine_schedule_with_warmup(optimizer,
 
 def main():
     args = parser.parse_args()
-    args.best_top1 = 0.
-    args.best_top5 = 0.
+    args.best_top1train = 0.
+    args.best_top5train = 0.
+    args.best_top1test = 0.
+    args.best_top5test = 0.
 
     if args.local_rank != -1:
         args.gpu = args.local_rank
