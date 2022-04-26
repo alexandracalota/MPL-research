@@ -299,10 +299,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
     predictions_file = os.path.dirname(args.stats_dir)
     predictions_file = os.path.join(predictions_file, args.name.replace(' ', '_') + '.json')
-    all_train_predictions = []
-    all_train_actual_predictions = []
-    all_unlabeled_predictions = []
-    all_pseudo_labels = []
+    all_train_predictions = [[]]
+    all_train_actual_predictions = [[]]
+    all_unlabeled_predictions = [[]]
+    all_pseudo_labels = [[]]
 
     if args.world_size > 1:
         labeled_epoch = 0
@@ -392,6 +392,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             del s_logits
 
             if args.debug:
+                logger.info("\n")
                 logger.info("S_LOGITS_L")
                 logger.info(s_logits_l.argmax(axis=1).tolist())
                 logger.info(s_logits_l)
@@ -408,10 +409,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 logger.info(hard_pseudo_label.tolist())
                 logger.info(hard_pseudo_label)
 
-            all_train_predictions.extend(s_logits_l.argmax(axis=1).tolist())
-            all_train_actual_predictions.extend(targets.tolist())
-            all_unlabeled_predictions.extend(s_logits_us.argmax(axis=1).tolist())
-            all_pseudo_labels.extend(hard_pseudo_label.tolist())
+            all_train_predictions.append(s_logits_l.argmax(axis=1).tolist())
+            all_train_actual_predictions.append(targets.tolist())
+            all_unlabeled_predictions.append(s_logits_us.argmax(axis=1).tolist())
+            all_pseudo_labels.append(hard_pseudo_label.tolist())
 
             s_loss_l_old = F.cross_entropy(s_logits_l.detach(), targets)
             s_loss = criterion(s_logits_us, hard_pseudo_label)
@@ -544,15 +545,17 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 data[UNLABELED_PREDICTIONS] = data.get(UNLABELED_PREDICTIONS, []).append(all_unlabeled_predictions)
                 data[PSEUDO_LABELS] = data.get(PSEUDO_LABELS, []).append(all_pseudo_labels)
 
-                logger.info("Loggin predictions to file: \n", data)
+                if args.debug:
+                    logger.info("\nLogging predictions to file: \n")
+                    logger.info(data)
 
                 with open(predictions_file, "w") as jsonFile:
                     json.dump(data, jsonFile)
 
-                all_train_predictions = []
-                all_train_actual_predictions = []
-                all_unlabeled_predictions = []
-                all_pseudo_labels = []
+                all_train_predictions = [[]]
+                all_train_actual_predictions = [[]]
+                all_unlabeled_predictions = [[]]
+                all_pseudo_labels = [[]]
 
                 save_checkpoint(args, {
                     'step': step + 1,
