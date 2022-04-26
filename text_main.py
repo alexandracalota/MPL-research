@@ -527,14 +527,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 except:
                     data = {}
 
-                data[TRAIN_PREDICTIONS] = data.get(TRAIN_PREDICTIONS, [])
-                data[TRAIN_PREDICTIONS].extend(all_train_predictions)
-                data[TRAIN_ACTUAL_PREDICTIONS] = data.get(TRAIN_ACTUAL_PREDICTIONS, [])
-                data[TRAIN_ACTUAL_PREDICTIONS].extend(all_train_actual_predictions)
-                data[UNLABELED_PREDICTIONS] = data.get(UNLABELED_PREDICTIONS, [])
-                data[UNLABELED_PREDICTIONS].extend(all_unlabeled_predictions)
-                data[PSEUDO_LABELS] = data.get(PSEUDO_LABELS, [])
-                data[PSEUDO_LABELS].extend(all_pseudo_labels)
+                data = compute_data(data, all_train_predictions, all_train_actual_predictions, all_unlabeled_predictions, all_pseudo_labels)
 
                 if args.debug:
                     logger.info("\nLogging predictions to file: \n")
@@ -580,6 +573,25 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
     finetune(args, labeled_loader, test_loader, student_model, criterion)
     return
 
+
+def compute_data(data, all_train_predictions, all_train_actual_predictions, all_unlabeled_predictions, all_pseudo_labels):
+    if not data.get(TRAIN_PREDICTIONS, []):
+        data[TRAIN_PREDICTIONS] = all_train_predictions
+    else:
+        data[TRAIN_PREDICTIONS].extend(all_train_predictions)
+    if not data.get(TRAIN_ACTUAL_PREDICTIONS, []):
+        data[TRAIN_ACTUAL_PREDICTIONS] = all_train_actual_predictions
+    else:
+        data[TRAIN_ACTUAL_PREDICTIONS].extend(all_train_actual_predictions)
+    if not data.get(UNLABELED_PREDICTIONS, []):
+        data[UNLABELED_PREDICTIONS] = all_unlabeled_predictions
+    else:
+        data[UNLABELED_PREDICTIONS].extend(all_unlabeled_predictions)
+    if not data.get(PSEUDO_LABELS, []):
+        data[PSEUDO_LABELS] = all_pseudo_labels
+    else:
+        data[PSEUDO_LABELS].extend(all_pseudo_labels)
+    return data
 
 def plot_metrics(args, test_loss, top1, top5, bin_test, step, evaluation_name):
     args.writer.add_scalar(evaluation_name + "/loss", test_loss, args.num_eval)
