@@ -295,7 +295,8 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
     logger.info("***** Running Training *****")
     logger.info(f"   Total steps = {args.total_steps}")
 
-    predictions_file = args.name.replace(' ', '_') + '.json'
+    predictions_file = os.path.dirname(args.stats_dir)
+    predictions_file = os.path.join(predictions_file, args.name.replace(' ', '_'), '.json')
     all_train_predictions = []
     all_train_actual_predictions = []
     all_unlabeled_predictions = []
@@ -513,8 +514,11 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 logger.info(f"Best top-1 acc: {args.best_top1:.2f}")
 
                 # save predictions to json file
-                with open(predictions_file, "r") as jsonFile:
-                    data = json.load(jsonFile)
+                try:
+                    with open(predictions_file, "r") as jsonFile:
+                        data = json.load(jsonFile)
+                except:
+                    data = {}
 
                 data[TRAIN_PREDICTIONS] = data.get(TRAIN_PREDICTIONS, []).append(all_train_predictions)
                 data[TRAIN_ACTUAL_PREDICTIONS] = data.get(TRAIN_ACTUAL_PREDICTIONS, []).append(all_train_actual_predictions)
