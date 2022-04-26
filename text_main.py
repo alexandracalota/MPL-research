@@ -503,7 +503,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 test_model = avg_student_model if avg_student_model is not None else student_model
 
                 train_loss, top1train, top5train, bin_train = evaluate(args, labeled_loader, test_model, criterion)
-                plot_metrics(args, train_loss, top1, top5, bin_test, step, "train")
+                plot_metrics(args, train_loss, top1train, top5train, bin_train, step, "train")
 
                 test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion)
                 plot_metrics(args, test_loss, top1, top5, bin_test, step, "test")
