@@ -393,24 +393,6 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             s_logits_us = s_logits[batch_size:]
             del s_logits
 
-            if args.debug_p:
-                logger.info("\n")
-                logger.info("S_LOGITS_L")
-                logger.info(s_logits_l.argmax(axis=1).tolist())
-                logger.info(s_logits_l)
-                logger.info("=========")
-                logger.info("TARGETS")
-                logger.info(targets.tolist())
-                logger.info(targets)
-                logger.info("S_LOGITS_US")
-                logger.info("=========")
-                logger.info(s_logits_us.argmax(axis=1).tolist())
-                logger.info(s_logits_us)
-                logger.info("HARD_PSEUDO_LABELS")
-                logger.info("=========")
-                logger.info(hard_pseudo_label.tolist())
-                logger.info(hard_pseudo_label)
-
             if not all_train_predictions:
                 all_train_predictions = [s_logits_l.argmax(axis=1).tolist()]
                 all_train_actual_predictions = [targets.tolist()]
@@ -421,6 +403,26 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 all_train_actual_predictions = all_train_actual_predictions.append(targets.tolist())
                 all_unlabeled_predictions = all_unlabeled_predictions.append(s_logits_us.argmax(axis=1).tolist())
                 all_pseudo_labels = all_pseudo_labels.append(hard_pseudo_label.tolist())
+
+            if args.debug_p:
+                logger.info("\n")
+                logger.info("S_LOGITS_L")
+                logger.info(s_logits_l.argmax(axis=1).tolist())
+                logger.info(s_logits_l)
+                logger.info(all_train_predictions)
+                logger.info("=========")
+                logger.info("TARGETS")
+                logger.info(targets.tolist())
+                logger.info(targets)
+                logger.info(all_train_actual_predictions)
+                logger.info("S_LOGITS_US")
+                logger.info("=========")
+                logger.info(s_logits_us.argmax(axis=1).tolist())
+                logger.info(s_logits_us)
+                logger.info("HARD_PSEUDO_LABELS")
+                logger.info("=========")
+                logger.info(hard_pseudo_label.tolist())
+                logger.info(hard_pseudo_label)
 
             s_loss_l_old = F.cross_entropy(s_logits_l.detach(), targets)
             s_loss = criterion(s_logits_us, hard_pseudo_label)
