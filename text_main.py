@@ -393,16 +393,16 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             s_logits_us = s_logits[batch_size:]
             del s_logits
 
-            if all_train_predictions == []:
+            if not all_train_predictions:
                 all_train_predictions = [s_logits_l.argmax(axis=1).tolist()]
                 all_train_actual_predictions = [targets.tolist()]
                 all_unlabeled_predictions = [s_logits_us.argmax(axis=1).tolist()]
                 all_pseudo_labels = [hard_pseudo_label.tolist()]
             else:
-                all_train_predictions = all_train_predictions.append(s_logits_l.argmax(axis=1).tolist())
-                all_train_actual_predictions = all_train_actual_predictions.append(targets.tolist())
-                all_unlabeled_predictions = all_unlabeled_predictions.append(s_logits_us.argmax(axis=1).tolist())
-                all_pseudo_labels = all_pseudo_labels.append(hard_pseudo_label.tolist())
+                all_train_predictions.append(s_logits_l.argmax(axis=1).tolist())
+                all_train_actual_predictions.append(targets.tolist())
+                all_unlabeled_predictions.append(s_logits_us.argmax(axis=1).tolist())
+                all_pseudo_labels.append(hard_pseudo_label.tolist())
 
             if args.debug_p:
                 logger.info("\n")
@@ -583,28 +583,22 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
 
 def compute_data(args, data, all_train_predictions, all_train_actual_predictions, all_unlabeled_predictions, all_pseudo_labels):
-    if args.debug_f:
-        logger.info("data while adding train predictions")
-    if data.get(TRAIN_PREDICTIONS, []) == []:
-        if args.debug_f:
-            logger.info(data.get(TRAIN_PREDICTIONS, []))
+    if not data.get(TRAIN_PREDICTIONS, []):
         data[TRAIN_PREDICTIONS] = all_train_predictions
     else:
-        if args.debug_f:
-            logger.info(data.get(TRAIN_PREDICTIONS, []))
         data[TRAIN_PREDICTIONS].extend(all_train_predictions)
     if args.debug_f:
         logger.info("data after adding train predictions")
         logger.info(data)
-    if data.get(TRAIN_ACTUAL_PREDICTIONS, []) == []:
+    if not data.get(TRAIN_ACTUAL_PREDICTIONS, []):
         data[TRAIN_ACTUAL_PREDICTIONS] = all_train_actual_predictions
     else:
         data[TRAIN_ACTUAL_PREDICTIONS].extend(all_train_actual_predictions)
-    if data.get(UNLABELED_PREDICTIONS, []) == []:
+    if not data.get(UNLABELED_PREDICTIONS, []):
         data[UNLABELED_PREDICTIONS] = all_unlabeled_predictions
     else:
         data[UNLABELED_PREDICTIONS].extend(all_unlabeled_predictions)
-    if data.get(PSEUDO_LABELS, []) == []:
+    if not data.get(PSEUDO_LABELS, []):
         data[PSEUDO_LABELS] = all_pseudo_labels
     else:
         data[PSEUDO_LABELS].extend(all_pseudo_labels)
