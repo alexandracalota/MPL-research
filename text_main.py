@@ -95,8 +95,10 @@ parser.add_argument("--max_seq_len", type=int, default=512)
 
 parser.add_argument('--validation', type=bool, default=False)
 parser.add_argument('--stats_dir', type=str, default='checkpoint')
-parser.add_argument('--debug', action='store_true')
-parser.set_defaults(debug=False)
+parser.add_argument('--debug_p', action='store_true')
+parser.set_defaults(debug_p=False)
+parser.add_argument('--debug_f', action='store_true')
+parser.set_defaults(debug_f=False)
 
 
 TRAIN_PREDICTIONS = 'train_predictions'
@@ -391,7 +393,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             s_logits_us = s_logits[batch_size:]
             del s_logits
 
-            if args.debug:
+            if args.debug_p:
                 logger.info("\n")
                 logger.info("S_LOGITS_L")
                 logger.info(s_logits_l.argmax(axis=1).tolist())
@@ -487,6 +489,31 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
         if (step + 1) % args.eval_step == 0:
             pbar.close()
             if args.local_rank in [-1, 0]:
+                # save predictions to json file
+                logger.info()
+                logger.info(all_train_predictions)
+                logger.info(all_train_actual_predictions)
+
+                try:
+                    with open(predictions_file, "r") as jsonFile:
+                        data = json.load(jsonFile)
+                except:
+                    data = {}
+
+                data = compute_data(args, data, all_train_predictions, all_train_actual_predictions, all_unlabeled_predictions, all_pseudo_labels)
+
+                if args.debug_f:
+                    logger.info("\nLogging predictions to file: \n")
+                    logger.info(data)
+
+                with open(predictions_file, "w") as jsonFile:
+                    json.dump(data, jsonFile)
+
+                all_train_predictions = []
+                all_train_actual_predictions = []
+                all_unlabeled_predictions = []
+                all_pseudo_labels = []
+
                 args.writer.add_scalar("train/1.s_loss", s_losses.avg, args.num_eval)
                 args.writer.add_scalar("train/2.t_loss", t_losses.avg, args.num_eval)
                 args.writer.add_scalar("train/3.t_labeled", t_losses_l.avg, args.num_eval)
@@ -502,10 +529,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
                 test_model = avg_student_model if avg_student_model is not None else student_model
 
-                train_loss, top1train, top5train, bin_train = evaluate(args, labeled_loader, test_model, criterion)
+                train_loss, top1train, top5train, bin_train = evaluate(args, labeled_loader, test_model, criterion, "train")
                 plot_metrics(args, train_loss, top1train, top5train, bin_train, step, "train")
 
-                test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion)
+                test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion, "test")
                 plot_metrics(args, test_loss, top1, top5, bin_test, step, "test")
 
                 wandb.log({"test/loss": test_loss,
@@ -519,27 +546,6 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
                 logger.info(f"top-1 acc: {top1:.2f}")
                 logger.info(f"Best top-1 acc: {args.best_top1:.2f}")
-
-                # save predictions to json file
-                try:
-                    with open(predictions_file, "r") as jsonFile:
-                        data = json.load(jsonFile)
-                except:
-                    data = {}
-
-                data = compute_data(data, all_train_predictions, all_train_actual_predictions, all_unlabeled_predictions, all_pseudo_labels)
-
-                if args.debug:
-                    logger.info("\nLogging predictions to file: \n")
-                    logger.info(data)
-
-                with open(predictions_file, "w") as jsonFile:
-                    json.dump(data, jsonFile)
-
-                all_train_predictions = []
-                all_train_actual_predictions = []
-                all_unlabeled_predictions = []
-                all_pseudo_labels = []
 
                 save_checkpoint(args, {
                     'step': step + 1,
@@ -574,11 +580,20 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
     return
 
 
-def compute_data(data, all_train_predictions, all_train_actual_predictions, all_unlabeled_predictions, all_pseudo_labels):
+def compute_data(args, data, all_train_predictions, all_train_actual_predictions, all_unlabeled_predictions, all_pseudo_labels):
+    if args.debug_f:
+        logger.info("data while adding train predictions")
     if not data.get(TRAIN_PREDICTIONS, []):
+        if args.debug_f:
+            logger.info(data.get(TRAIN_PREDICTIONS, []))
         data[TRAIN_PREDICTIONS] = all_train_predictions
     else:
+        if args.debug_f:
+            logger.info(data.get(TRAIN_PREDICTIONS, []))
         data[TRAIN_PREDICTIONS].extend(all_train_predictions)
+    if args.debug_f:
+        logger.info("data after adding train predictions")
+        logger.info(data)
     if not data.get(TRAIN_ACTUAL_PREDICTIONS, []):
         data[TRAIN_ACTUAL_PREDICTIONS] = all_train_actual_predictions
     else:
@@ -613,7 +628,7 @@ def plot_metrics(args, test_loss, top1, top5, bin_test, step, evaluation_name):
     args.writer.add_scalar(evaluation_name + '_f1/label2', bin_test['None/f1'][2], step)
     args.writer.add_scalar(evaluation_name + '_f1/label3', bin_test['None/f1'][3], step)
 
-def evaluate(args, test_loader, model, criterion):
+def evaluate(args, test_loader, model, criterion, evaluation_name):
     outputs = []
     targets = []
 
@@ -647,7 +662,7 @@ def evaluate(args, test_loader, model, criterion):
             batch_time.update(time.time() - end)
             end = time.time()
             test_iter.set_description(
-                f"Test Iter: {step + 1:3}/{len(test_loader):3}. Data: {data_time.avg:.2f}s. "
+                evaluation_name + f" Evaluation: {step + 1:3}/{len(test_loader):3}. Data: {data_time.avg:.2f}s. "
                 f"Batch: {batch_time.avg:.2f}s. Loss: {losses.avg:.4f}. "
                 f"top1: {top1.avg:.2f}. top5: {top5.avg:.2f}. ")
 
