@@ -409,10 +409,16 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 logger.info(hard_pseudo_label.tolist())
                 logger.info(hard_pseudo_label)
 
-            all_train_predictions = all_train_predictions.append(s_logits_l.argmax(axis=1).tolist())
-            all_train_actual_predictions = all_train_actual_predictions.append(targets.tolist())
-            all_unlabeled_predictions = all_unlabeled_predictions.append(s_logits_us.argmax(axis=1).tolist())
-            all_pseudo_labels = all_pseudo_labels.append(hard_pseudo_label.tolist())
+            if len(all_train_predictions) == 0:
+                all_train_predictions = [s_logits_l.argmax(axis=1).tolist()]
+                all_train_actual_predictions = [targets.tolist()]
+                all_unlabeled_predictions = [s_logits_us.argmax(axis=1).tolist()]
+                all_pseudo_labels = [hard_pseudo_label.tolist()]
+            else:
+                all_train_predictions = all_train_predictions.append(s_logits_l.argmax(axis=1).tolist())
+                all_train_actual_predictions = all_train_actual_predictions.append(targets.tolist())
+                all_unlabeled_predictions = all_unlabeled_predictions.append(s_logits_us.argmax(axis=1).tolist())
+                all_pseudo_labels = all_pseudo_labels.append(hard_pseudo_label.tolist())
 
             s_loss_l_old = F.cross_entropy(s_logits_l.detach(), targets)
             s_loss = criterion(s_logits_us, hard_pseudo_label)
@@ -537,10 +543,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 with open(predictions_file, "w") as jsonFile:
                     json.dump(data, jsonFile)
 
-                all_train_predictions = [[]]
-                all_train_actual_predictions = [[]]
-                all_unlabeled_predictions = [[]]
-                all_pseudo_labels = [[]]
+                all_train_predictions = []
+                all_train_actual_predictions = []
+                all_unlabeled_predictions = []
+                all_pseudo_labels = []
 
                 save_checkpoint(args, {
                     'step': step + 1,
