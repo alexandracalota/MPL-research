@@ -95,6 +95,7 @@ parser.add_argument("--max_seq_len", type=int, default=512)
 
 parser.add_argument('--validation', type=bool, default=False)
 parser.add_argument('--stats_dir', type=str, default='checkpoint')
+parser.add_argument('--debug', type=bool, default=False)
 
 
 TRAIN_PREDICTIONS = 'train_predictions'
@@ -379,7 +380,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
             s_logits = student_model(s_texts, s_masks, s_segments)
 
-            # if step % 100 == 0:
+            # if args.debug and step % 100 == 0:
             #     logger.info(f'\ns_texts shape: {s_texts.shape} s_masks shape: {s_masks.shape} s_segments shape: {s_segments.shape}')
             #     logger.info(f'logits shape: {s_logits.shape} targets shape: {targets.shape}')
             #     logger.info(s_logits)
@@ -388,6 +389,23 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             s_logits_l = s_logits[:batch_size]
             s_logits_us = s_logits[batch_size:]
             del s_logits
+
+            if args.debug:
+                logger.info("S_LOGITS_L")
+                logger.info(s_logits_l.argmax(axis=1).tolist())
+                logger.info(s_logits_l)
+                logger.info("=========")
+                logger.info("TARGETS")
+                logger.info(targets.tolist())
+                logger.info(targets)
+                logger.info("S_LOGITS_US")
+                logger.info("=========")
+                logger.info(s_logits_us.argmax(axis=1).tolist())
+                logger.info(s_logits_us)
+                logger.info("HARD_PSEUDO_LABELS")
+                logger.info("=========")
+                logger.info(hard_pseudo_label.tolist())
+                logger.info(hard_pseudo_label)
 
             all_train_predictions.extend(s_logits_l.argmax(axis=1).tolist())
             all_train_actual_predictions.extend(targets.tolist())
