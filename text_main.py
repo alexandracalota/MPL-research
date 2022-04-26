@@ -409,7 +409,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 logger.info(hard_pseudo_label.tolist())
                 logger.info(hard_pseudo_label)
 
-            if len(all_train_predictions) == 0:
+            if not all_train_predictions:
                 all_train_predictions = [s_logits_l.argmax(axis=1).tolist()]
                 all_train_actual_predictions = [targets.tolist()]
                 all_unlabeled_predictions = [s_logits_us.argmax(axis=1).tolist()]
