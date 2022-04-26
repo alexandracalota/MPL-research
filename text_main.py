@@ -95,7 +95,7 @@ parser.add_argument("--max_seq_len", type=int, default=512)
 
 parser.add_argument('--validation', type=bool, default=False)
 parser.add_argument('--stats_dir', type=str, default='checkpoint')
-parser.add_argument('--debug', type=bool, default=False)
+parser.add_argument('--debug', default=False, action=argparse.BooleanOptionalAction)
 
 
 TRAIN_PREDICTIONS = 'train_predictions'
