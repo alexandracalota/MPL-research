@@ -299,10 +299,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 
     predictions_file = os.path.dirname(args.stats_dir)
     predictions_file = os.path.join(predictions_file, args.name.replace(' ', '_') + '.json')
-    all_train_predictions = [[]]
-    all_train_actual_predictions = [[]]
-    all_unlabeled_predictions = [[]]
-    all_pseudo_labels = [[]]
+    all_train_predictions = []
+    all_train_actual_predictions = []
+    all_unlabeled_predictions = []
+    all_pseudo_labels = []
 
     if args.world_size > 1:
         labeled_epoch = 0
@@ -409,10 +409,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 logger.info(hard_pseudo_label.tolist())
                 logger.info(hard_pseudo_label)
 
-            all_train_predictions.append(s_logits_l.argmax(axis=1).tolist())
-            all_train_actual_predictions.append(targets.tolist())
-            all_unlabeled_predictions.append(s_logits_us.argmax(axis=1).tolist())
-            all_pseudo_labels.append(hard_pseudo_label.tolist())
+            all_train_predictions = all_train_predictions.append(s_logits_l.argmax(axis=1).tolist())
+            all_train_actual_predictions = all_train_actual_predictions.append(targets.tolist())
+            all_unlabeled_predictions = all_unlabeled_predictions.append(s_logits_us.argmax(axis=1).tolist())
+            all_pseudo_labels = all_pseudo_labels.append(hard_pseudo_label.tolist())
 
             s_loss_l_old = F.cross_entropy(s_logits_l.detach(), targets)
             s_loss = criterion(s_logits_us, hard_pseudo_label)
@@ -497,29 +497,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 test_model = avg_student_model if avg_student_model is not None else student_model
 
                 train_loss, top1train, top5train, bin_train = evaluate(args, labeled_loader, test_model, criterion)
-                args.writer.add_scalar("train/loss", train_loss, args.num_eval)
-                args.writer.add_scalar("train/acc@1", top1train, args.num_eval)
-                args.writer.add_scalar("train/acc@5", top5train, args.num_eval)
+                plot_metrics(args, train_loss, top1, top5, bin_test, step, "train")
 
                 test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion)
-                args.writer.add_scalar("test/loss", test_loss, args.num_eval)
-                args.writer.add_scalar("test/acc@1", top1, args.num_eval)
-                args.writer.add_scalar("test/acc@5", top5, args.num_eval)
-
-                args.writer.add_scalar('precision/label0', bin_test['None/precision'][0], step)
-                args.writer.add_scalar('precision/label1', bin_test['None/precision'][1], step)
-                args.writer.add_scalar('precision/label2', bin_test['None/precision'][2], step)
-                args.writer.add_scalar('precision/label3', bin_test['None/precision'][3], step)
-
-                args.writer.add_scalar('recall/label0', bin_test['None/recall'][0], step)
-                args.writer.add_scalar('recall/label1', bin_test['None/recall'][1], step)
-                args.writer.add_scalar('recall/label2', bin_test['None/recall'][2], step)
-                args.writer.add_scalar('recall/label3', bin_test['None/recall'][3], step)
-
-                args.writer.add_scalar('f1/label0', bin_test['None/f1'][0], step)
-                args.writer.add_scalar('f1/label1', bin_test['None/f1'][1], step)
-                args.writer.add_scalar('f1/label2', bin_test['None/f1'][2], step)
-                args.writer.add_scalar('f1/label3', bin_test['None/f1'][3], step)
+                plot_metrics(args, test_loss, top1, top5, bin_test, step, "test")
 
                 wandb.log({"test/loss": test_loss,
                            "test/acc@1": top1,
@@ -540,10 +521,14 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                 except:
                     data = {}
 
-                data[TRAIN_PREDICTIONS] = data.get(TRAIN_PREDICTIONS, []).append(all_train_predictions)
-                data[TRAIN_ACTUAL_PREDICTIONS] = data.get(TRAIN_ACTUAL_PREDICTIONS, []).append(all_train_actual_predictions)
-                data[UNLABELED_PREDICTIONS] = data.get(UNLABELED_PREDICTIONS, []).append(all_unlabeled_predictions)
-                data[PSEUDO_LABELS] = data.get(PSEUDO_LABELS, []).append(all_pseudo_labels)
+                data[TRAIN_PREDICTIONS] = data.get(TRAIN_PREDICTIONS, [])
+                data[TRAIN_PREDICTIONS].extend(all_train_predictions)
+                data[TRAIN_ACTUAL_PREDICTIONS] = data.get(TRAIN_ACTUAL_PREDICTIONS, [])
+                data[TRAIN_ACTUAL_PREDICTIONS].extend(all_train_actual_predictions)
+                data[UNLABELED_PREDICTIONS] = data.get(UNLABELED_PREDICTIONS, [])
+                data[UNLABELED_PREDICTIONS].extend(all_unlabeled_predictions)
+                data[PSEUDO_LABELS] = data.get(PSEUDO_LABELS, [])
+                data[PSEUDO_LABELS].extend(all_pseudo_labels)
 
                 if args.debug:
                     logger.info("\nLogging predictions to file: \n")
@@ -589,6 +574,26 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
     finetune(args, labeled_loader, test_loader, student_model, criterion)
     return
 
+
+def plot_metrics(args, test_loss, top1, top5, bin_test, step, evaluation_name):
+    args.writer.add_scalar(evaluation_name + "/loss", test_loss, args.num_eval)
+    args.writer.add_scalar(evaluation_name + "/acc@1", top1, args.num_eval)
+    args.writer.add_scalar(evaluation_name + "/acc@5", top5, args.num_eval)
+
+    args.writer.add_scalar(evaluation_name + '_precision/label0', bin_test['None/precision'][0], step)
+    args.writer.add_scalar(evaluation_name + '_precision/label1', bin_test['None/precision'][1], step)
+    args.writer.add_scalar(evaluation_name + '_precision/label2', bin_test['None/precision'][2], step)
+    args.writer.add_scalar(evaluation_name + '_precision/label3', bin_test['None/precision'][3], step)
+
+    args.writer.add_scalar(evaluation_name + '_recall/label0', bin_test['None/recall'][0], step)
+    args.writer.add_scalar(evaluation_name + '_recall/label1', bin_test['None/recall'][1], step)
+    args.writer.add_scalar(evaluation_name + '_recall/label2', bin_test['None/recall'][2], step)
+    args.writer.add_scalar(evaluation_name + '_recall/label3', bin_test['None/recall'][3], step)
+
+    args.writer.add_scalar(evaluation_name + '_f1/label0', bin_test['None/f1'][0], step)
+    args.writer.add_scalar(evaluation_name + '_f1/label1', bin_test['None/f1'][1], step)
+    args.writer.add_scalar(evaluation_name + '_f1/label2', bin_test['None/f1'][2], step)
+    args.writer.add_scalar(evaluation_name + '_f1/label3', bin_test['None/f1'][3], step)
 
 def evaluate(args, test_loader, model, criterion):
     outputs = []
