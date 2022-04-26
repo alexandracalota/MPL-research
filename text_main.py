@@ -490,7 +490,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             pbar.close()
             if args.local_rank in [-1, 0]:
                 # save predictions to json file
-                logger.info()
+                logger.info("\n")
                 logger.info(all_train_predictions)
                 logger.info(all_train_actual_predictions)
 
