@@ -393,7 +393,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             s_logits_us = s_logits[batch_size:]
             del s_logits
 
-            if not all_train_predictions:
+            if all_train_predictions == []:
                 all_train_predictions = [s_logits_l.argmax(axis=1).tolist()]
                 all_train_actual_predictions = [targets.tolist()]
                 all_unlabeled_predictions = [s_logits_us.argmax(axis=1).tolist()]
@@ -585,7 +585,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
 def compute_data(args, data, all_train_predictions, all_train_actual_predictions, all_unlabeled_predictions, all_pseudo_labels):
     if args.debug_f:
         logger.info("data while adding train predictions")
-    if not data.get(TRAIN_PREDICTIONS, []):
+    if data.get(TRAIN_PREDICTIONS, []) == []:
         if args.debug_f:
             logger.info(data.get(TRAIN_PREDICTIONS, []))
         data[TRAIN_PREDICTIONS] = all_train_predictions
@@ -596,15 +596,15 @@ def compute_data(args, data, all_train_predictions, all_train_actual_predictions
     if args.debug_f:
         logger.info("data after adding train predictions")
         logger.info(data)
-    if not data.get(TRAIN_ACTUAL_PREDICTIONS, []):
+    if data.get(TRAIN_ACTUAL_PREDICTIONS, []) == []:
         data[TRAIN_ACTUAL_PREDICTIONS] = all_train_actual_predictions
     else:
         data[TRAIN_ACTUAL_PREDICTIONS].extend(all_train_actual_predictions)
-    if not data.get(UNLABELED_PREDICTIONS, []):
+    if data.get(UNLABELED_PREDICTIONS, []) == []:
         data[UNLABELED_PREDICTIONS] = all_unlabeled_predictions
     else:
         data[UNLABELED_PREDICTIONS].extend(all_unlabeled_predictions)
-    if not data.get(PSEUDO_LABELS, []):
+    if data.get(PSEUDO_LABELS, []) == []:
         data[PSEUDO_LABELS] = all_pseudo_labels
     else:
         data[PSEUDO_LABELS].extend(all_pseudo_labels)
