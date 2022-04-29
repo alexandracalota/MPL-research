@@ -852,7 +852,7 @@ def main():
 
     args.device = torch.device('cuda', args.gpu)
 
-    args.iteration = args.k_img // args.batch_size // args.world_size
+    args.iteration = args.num_labeled // args.batch_size // args.world_size
     args.total_steps = args.epochs * args.iteration // args.gradient_accumulation_steps
 
     logging.basicConfig(
