@@ -78,7 +78,6 @@ parser.add_argument("--optimizer", type=str, default="adam", choices=["sgd", "ad
 parser.add_argument("--scheduler", type=str, default="cosine", choices=["cosine", "plateau"])
 parser.add_argument("--hidden-sz", type=int, default=768)
 parser.add_argument("--bert_model", type=str, default="bert-base-uncased", choices=["bert-base-uncased", "bert-large-uncased"])
-parser.add_argument('--k-img', default=65536, type=int, help='number of labeled examples')
 parser.add_argument("--gradient-accumulation-steps", type=int, default=10)
 parser.add_argument('--epochs', default=100, type=int, help='number of total epochs to run')
 parser.add_argument("--model", type=str, default="bert", choices=["bow", "img", "bert", "concatbow", "concatbert", "mmbt"])
@@ -784,7 +783,7 @@ def get_optimizer(model, args, lr):
 def get_mmbt_optimizer(model, args, lr):
     if args.model in ["bert"]:
         total_steps = (
-                args.k_img
+                args.num_labeled
                 / args.batch_size
                 / args.gradient_accumulation_steps
                 * args.epochs
