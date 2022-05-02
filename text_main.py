@@ -432,7 +432,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             nn.utils.clip_grad_norm_(student_model.parameters(), args.grad_clip)
         s_scaler.step(s_optimizer)
         s_scaler.update()
-        s_scheduler.step()
+        if args.scheduler == 'plateau':
+            s_scheduler.step(args.metric)
+        else:
+            s_scheduler.step()
         if args.ema > 0:
             avg_student_model.update_parameters(student_model)
 
@@ -455,7 +458,10 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             nn.utils.clip_grad_norm_(teacher_model.parameters(), args.grad_clip)
         t_scaler.step(t_optimizer)
         t_scaler.update()
-        t_scheduler.step()
+        if args.scheduler == 'plateau':
+            t_scheduler.step(args.metric)
+        else:
+            t_scheduler.step()
 
         teacher_model.zero_grad()
         student_model.zero_grad()
@@ -841,6 +847,7 @@ def main():
     args.best_top5train = 0.
     args.best_top1test = 0.
     args.best_top5test = 0.
+    args.metric = 0 # used for plateau lr
 
     if args.local_rank != -1:
         args.gpu = args.local_rank
