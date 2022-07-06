@@ -721,15 +721,17 @@ def finetune(args, train_loader, test_loader, model, criterion):
         model.train()
         end = time.time()
         labeled_iter = tqdm(labeled_loader, disable=args.local_rank not in [-1, 0])
-        for step, (images, targets) in enumerate(labeled_iter):
+        for step, (text_l, segment_l, mask_l, _, _, _, tgt_l) in enumerate(labeled_iter):
             data_time.update(time.time() - end)
-            batch_size = images.shape[0]
-            images = images.to(args.device)
-            targets = targets.to(args.device)
+            batch_size = text_l.shape[0]
+            text_l = text_l.to(args.device)
+            segment_l = segment_l.to(args.device)
+            mask_l = mask_l.to(args.device)
+            tgt_l = tgt_l.to(args.device)
             with amp.autocast(enabled=args.amp):
                 model.zero_grad()
-                outputs = model(images)
-                loss = criterion(outputs, targets)
+                outputs = model(text_l, mask_l, segment_l)
+                loss = criterion(outputs, tgt_l)
 
             scaler.scale(loss).backward()
             scaler.step(optimizer)
