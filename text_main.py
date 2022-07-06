@@ -98,6 +98,8 @@ parser.add_argument('--debug_p', action='store_true')
 parser.set_defaults(debug_p=False)
 parser.add_argument('--debug_f', action='store_true')
 parser.set_defaults(debug_f=False)
+parser.add_argument('--supervised', action='store_true')
+parser.set_defaults(debug_f=False)
 
 
 TRAIN_PREDICTIONS = 'train_predictions'
@@ -124,7 +126,7 @@ def create_model(args):
 
     return model
 
-def train_teacher(args, labeled_loader, unlabeled_loader, test_loader,
+def train_teacher(args, labeled_loader, test_loader,
                   teacher_model, criterion, t_optimizer, t_scheduler, t_scaler):
 
     logger.info("***** Running Training *****")
@@ -134,10 +136,8 @@ def train_teacher(args, labeled_loader, unlabeled_loader, test_loader,
         labeled_epoch = 0
         unlabeled_epoch = 0
         labeled_loader.sampler.set_epoch(labeled_epoch)
-        unlabeled_loader.sampler.set_epoch(unlabeled_epoch)
 
     labeled_iter = iter(labeled_loader)
-    unlabeled_iter = iter(unlabeled_loader)
 
     for step in range(args.start_step, args.total_steps):
         if step % args.eval_step == 0:
@@ -209,21 +209,11 @@ def train_teacher(args, labeled_loader, unlabeled_loader, test_loader,
         mean_mask.update(mask.mean().item())
 
         batch_time.update(time.time() - end)
-        pbar.set_description(
-            f"Train Iter: {step + 1:3}/{args.total_steps:3}. "
-            f"LR: {get_lr(s_optimizer):.4f}. Data: {data_time.avg:.2f}s. "
-            f"Batch: {batch_time.avg:.2f}s. S_Loss: {s_losses.avg:.4f}. "
-            f"T_Loss: {t_losses.avg:.4f}. Mask: {mean_mask.avg:.4f}. ")
-        pbar.update()
-        if args.local_rank in [-1, 0]:
-            args.writer.add_scalar("lr", get_lr(s_optimizer), step)
-            wandb.log({"lr": get_lr(s_optimizer)})
 
         args.num_eval = step // args.eval_step
         if (step + 1) % args.eval_step == 0:
             pbar.close()
             if args.local_rank in [-1, 0]:
-                args.writer.add_scalar("train/1.s_loss", s_losses.avg, args.num_eval)
                 args.writer.add_scalar("train/2.t_loss", t_losses.avg, args.num_eval)
                 args.writer.add_scalar("train/3.t_labeled", t_losses_l.avg, args.num_eval)
                 args.writer.add_scalar("train/4.t_unlabeled", t_losses_u.avg, args.num_eval)
@@ -236,7 +226,7 @@ def train_teacher(args, labeled_loader, unlabeled_loader, test_loader,
                            "train/5.t_mpl": t_losses_mpl.avg,
                            "train/6.mask": mean_mask.avg})
 
-                test_model = avg_student_model if avg_student_model is not None else student_model
+                test_model = teacher_model
                 test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion)
 
                 args.writer.add_scalar("test/loss", test_loss, args.num_eval)
@@ -284,12 +274,11 @@ def train_teacher(args, labeled_loader, unlabeled_loader, test_loader,
         args.writer.add_scalar("result/test_acc@1", args.best_top1)
         wandb.log({"result/test_acc@1": args.best_top1})
     # finetune
-    del t_scaler, t_scheduler, t_optimizer, teacher_model, unlabeled_loader
     ckpt_name = f'{args.save_path}/{args.name}_best.pth.tar'
     loc = f'cuda:{args.gpu}'
     checkpoint = torch.load(ckpt_name, map_location=loc)
     logger.info(f"=> loading checkpoint '{ckpt_name}'")
-    finetune(args, labeled_loader, test_loader, student_model, criterion)
+    finetune(args, labeled_loader, test_loader, teacher_model, criterion)
     return
 
 def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
@@ -991,6 +980,8 @@ def main():
         evaluate(args, test_loader, student_model, criterion)
         return
 
+    if args.supervised:
+        train_teacher(args, labeled_loader, test_loader, teacher_model, criterion, t_text_optimizer, t_text_scheduler, t_scaler)
 
     teacher_model.zero_grad()
     student_model.zero_grad()
