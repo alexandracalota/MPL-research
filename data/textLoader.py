@@ -38,7 +38,7 @@ def get_datasets(args):
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=True).tokenize
 
     args.labels, args.label_freqs = get_labels_and_frequencies(
-        os.path.join(args.data_path, args.task, f"{args.train_file}.csv")
+        os.path.join(args.data_path, f"{args.train_file}.csv")
     )
     vocab = get_vocab(args)
     args.vocab = vocab
@@ -46,7 +46,7 @@ def get_datasets(args):
     args.num_classes = len(args.labels)
 
     labeled_dataset = TextDataset(
-        os.path.join(args.data_path, args.task, f"{args.train_file}.csv"),
+        os.path.join(args.data_path, f"{args.train_file}.csv"),
         tokenizer,
         vocab,
         args,
@@ -57,7 +57,7 @@ def get_datasets(args):
     args.train_data_len = len(labeled_dataset)
 
     unlabeled_dataset = TextDataset(
-        os.path.join(args.data_path, args.task, f"unlabeled.csv"),
+        os.path.join(args.data_path, f"unlabeled.csv"),
         tokenizer,
         vocab,
         args,
@@ -66,7 +66,7 @@ def get_datasets(args):
     )
 
     dev_dataset = TextDataset(
-        os.path.join(args.data_path, args.task, f"dev.csv"),
+        os.path.join(args.data_path, f"dev.csv"),
         tokenizer,
         vocab,
         args,
@@ -75,7 +75,7 @@ def get_datasets(args):
     )
 
     test_dataset = TextDataset(
-        os.path.join(args.data_path, args.task, f"test.csv"),
+        os.path.join(args.data_path, f"test.csv"),
         tokenizer,
         vocab,
         args,
