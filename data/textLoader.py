@@ -51,7 +51,7 @@ def get_datasets(args):
         vocab,
         args,
         text_aug1=args.text_soft_aug,
-        text_aug2='none'
+        text_aug2=args.text_hard_aug,
     )
 
     args.train_data_len = len(labeled_dataset)
