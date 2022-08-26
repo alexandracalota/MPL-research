@@ -653,7 +653,7 @@ def evaluate(args, test_loader, model, criterion, evaluation_name):
                 outputs.append(logits_x)
                 targets.append(tgt_x)
 
-            acc1, acc5 = accuracy(logits_x, tgt_x, (1, 4))
+            acc1, acc5 = accuracy(logits_x, tgt_x, (1, args.num_classes))
             losses.update(loss.item(), batch_size)
             top1.update(acc1[0], batch_size)
             top5.update(acc5[0], batch_size)
