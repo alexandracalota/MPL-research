@@ -611,20 +611,14 @@ def plot_metrics(args, test_loss, top1, top5, bin_test, step, evaluation_name):
     args.writer.add_scalar(evaluation_name + "/acc@1", top1, args.num_eval)
     args.writer.add_scalar(evaluation_name + "/acc@5", top5, args.num_eval)
 
-    args.writer.add_scalar(evaluation_name + '_precision/label0', bin_test['None/precision'][0], step)
-    args.writer.add_scalar(evaluation_name + '_precision/label1', bin_test['None/precision'][1], step)
-    args.writer.add_scalar(evaluation_name + '_precision/label2', bin_test['None/precision'][2], step)
-    args.writer.add_scalar(evaluation_name + '_precision/label3', bin_test['None/precision'][3], step)
+    for label in range(args.num_classes):
+        args.writer.add_scalar(evaluation_name + '_precision/label' + str(label), bin_test['None/precision'][label], step)
 
-    args.writer.add_scalar(evaluation_name + '_recall/label0', bin_test['None/recall'][0], step)
-    args.writer.add_scalar(evaluation_name + '_recall/label1', bin_test['None/recall'][1], step)
-    args.writer.add_scalar(evaluation_name + '_recall/label2', bin_test['None/recall'][2], step)
-    args.writer.add_scalar(evaluation_name + '_recall/label3', bin_test['None/recall'][3], step)
+    for label in range(args.num_classes):
+        args.writer.add_scalar(evaluation_name + '_recall/label' + str(label), bin_test['None/recall'][label], step)
 
-    args.writer.add_scalar(evaluation_name + '_f1/label0', bin_test['None/f1'][0], step)
-    args.writer.add_scalar(evaluation_name + '_f1/label1', bin_test['None/f1'][1], step)
-    args.writer.add_scalar(evaluation_name + '_f1/label2', bin_test['None/f1'][2], step)
-    args.writer.add_scalar(evaluation_name + '_f1/label3', bin_test['None/f1'][3], step)
+    for label in range(args.num_classes):
+        args.writer.add_scalar(evaluation_name + '_f1/label' + str(label), bin_test['None/f1'][label], step)
 
 def evaluate(args, test_loader, model, criterion, evaluation_name):
     outputs = []
