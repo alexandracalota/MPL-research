@@ -8,7 +8,10 @@ import pandas as pd
 class TextDataset(Dataset):
     def __init__(self, csv_path, tokenizer, vocabulary, args, text_aug1='none', text_aug2='none'):
         self.data = pd.read_csv(csv_path)
-        self.data.back_translation = self.data.back_translation.apply(literal_eval)
+        if text_aug1 == 'back_translation' or text_aug2 == 'back_translation':
+            self.data.back_translation = self.data.back_translation.apply(literal_eval)
+        elif text_aug1 == 'eda' or text_aug2 == 'eda':
+            self.data.eda = self.data.eda.apply(literal_eval)
 
         self.num_classes = self.data['Label'].unique().shape[0]
         print(f'Loaded {self.data.shape[0]} examples equally distributed from {self.num_classes} classes.')
