@@ -815,7 +815,7 @@ def main():
         logger.info('We\'re evaluating')
         del t_scaler, t_text_scheduler, t_text_optimizer, teacher_model, unlabeled_loader, labeled_loader
         del s_scaler, s_text_scheduler, s_text_optimizer
-        evaluate(args, test_loader, student_model, criterion)
+        evaluate(args, test_loader, student_model, criterion, 'Test')
         return
 
     teacher_model.zero_grad()
