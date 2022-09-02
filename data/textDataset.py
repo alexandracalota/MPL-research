@@ -13,8 +13,12 @@ class TextDataset(Dataset):
         elif text_aug1 == 'eda' or text_aug2 == 'eda':
             self.data.eda = self.data.eda.apply(literal_eval)
 
+        if args.length_hist:
+            self.data["text_len"] = self.data.Text.map(lambda x : len(x))
+            self.data = self.data[(self.data.text_len > args.interval_min) & (self.data.text_len < args.interval_max)]
+
         self.num_classes = self.data['Label'].unique().shape[0]
-        print(f'Loaded {self.data.shape[0]} examples equally distributed from {self.num_classes} classes.')
+        print(f'Loaded {self.data.shape[0]} examples equally distributed from {self.num_classes} classes from {csv_path}.')
 
         self.args = args
         self.tokenizer = tokenizer

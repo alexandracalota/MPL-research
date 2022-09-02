@@ -101,6 +101,11 @@ parser.set_defaults(debug_f=False)
 parser.add_argument('--supervised', action='store_true')
 parser.set_defaults(debug_f=False)
 
+parser.add_argument('--length-hist', action='store_true')
+parser.set_defaults(length_hist=False)
+parser.add_argument("--interval-min", type=int, default=0)
+parser.add_argument("--interval-max", type=int, default=math.inf)
+
 
 TRAIN_PREDICTIONS = 'train_predictions'
 TRAIN_ACTUAL_PREDICTIONS = 'train_actual_predictions'
@@ -125,161 +130,6 @@ def create_model(args):
         sum(p.numel() for p in model.parameters()) / 1e6))
 
     return model
-
-def train_teacher(args, labeled_loader, test_loader,
-                  teacher_model, criterion, t_optimizer, t_scheduler, t_scaler):
-
-    logger.info("***** Running Training *****")
-    logger.info(f"   Total steps = {args.total_steps}")
-
-    if args.world_size > 1:
-        labeled_epoch = 0
-        unlabeled_epoch = 0
-        labeled_loader.sampler.set_epoch(labeled_epoch)
-
-    labeled_iter = iter(labeled_loader)
-
-    for step in range(args.start_step, args.total_steps):
-        if step % args.eval_step == 0:
-            pbar = tqdm(range(args.eval_step), disable=args.local_rank not in [-1, 0])
-            batch_time = AverageMeter()
-            data_time = AverageMeter()
-            s_losses = AverageMeter()
-            t_losses = AverageMeter()
-            t_losses_l = AverageMeter()
-            t_losses_u = AverageMeter()
-            t_losses_mpl = AverageMeter()
-            mean_mask = AverageMeter()
-
-        teacher_model.train()
-        end = time.time()
-
-        try:
-            text_l, segment_l, mask_l, _, _, _, tgt_l = labeled_iter.next()
-        except:
-            if args.world_size > 1:
-                labeled_epoch += 1
-                labeled_loader.sampler.set_epoch(labeled_epoch)
-            labeled_iter = iter(labeled_loader)
-            text_l, segment_l, mask_l, _, _, _, tgt_l = labeled_iter.next()
-
-        data_time.update(time.time() - end)
-
-        texts = torch.cat(text_l).to(args.device)
-        segments = torch.cat(segment_l).to(args.device)
-        masks = torch.cat(mask_l).to(args.device)
-
-        with amp.autocast(enabled=args.amp):
-            batch_size = text_l.shape[0]
-
-            logits = teacher_model(texts, masks, segments)
-            t_logits_l = logits[:batch_size]
-            del logits
-
-            targets = tgt_l.to(args.device)
-
-            t_loss_l = criterion(t_logits_l, targets)
-            t_loss_uda = t_loss_l
-
-            if step % 100 == 0:
-                print('\n')
-                logger.info(targets)
-
-        t_loss = t_loss_uda
-
-        t_scaler.scale(t_loss).backward()
-        if args.grad_clip > 0:
-            t_scaler.unscale_(t_optimizer)
-            nn.utils.clip_grad_norm_(teacher_model.parameters(), args.grad_clip)
-        t_scaler.step(t_optimizer)
-        t_scaler.update()
-        t_scheduler.step()
-
-        teacher_model.zero_grad()
-
-        if args.world_size > 1:
-            t_loss = reduce_tensor(t_loss.detach(), args.world_size)
-            t_loss_l = reduce_tensor(t_loss_l.detach(), args.world_size)
-            t_loss_mpl = reduce_tensor(t_loss_mpl.detach(), args.world_size)
-            mask = reduce_tensor(mask, args.world_size)
-
-        t_losses.update(t_loss.item())
-        t_losses_l.update(t_loss_l.item())
-        t_losses_mpl.update(t_loss_mpl.item())
-        mean_mask.update(mask.mean().item())
-
-        batch_time.update(time.time() - end)
-
-        args.num_eval = step // args.eval_step
-        if (step + 1) % args.eval_step == 0:
-            pbar.close()
-            if args.local_rank in [-1, 0]:
-                args.writer.add_scalar("train/2.t_loss", t_losses.avg, args.num_eval)
-                args.writer.add_scalar("train/3.t_labeled", t_losses_l.avg, args.num_eval)
-                args.writer.add_scalar("train/4.t_unlabeled", t_losses_u.avg, args.num_eval)
-                args.writer.add_scalar("train/5.t_mpl", t_losses_mpl.avg, args.num_eval)
-                args.writer.add_scalar("train/6.mask", mean_mask.avg, args.num_eval)
-                wandb.log({"train/1.s_loss": s_losses.avg,
-                           "train/2.t_loss": t_losses.avg,
-                           "train/3.t_labeled": t_losses_l.avg,
-                           "train/4.t_unlabeled": t_losses_u.avg,
-                           "train/5.t_mpl": t_losses_mpl.avg,
-                           "train/6.mask": mean_mask.avg})
-
-                test_model = teacher_model
-                test_loss, top1, top5, bin_test = evaluate(args, test_loader, test_model, criterion)
-
-                args.writer.add_scalar("test/loss", test_loss, args.num_eval)
-                args.writer.add_scalar("test/acc@1", top1, args.num_eval)
-                args.writer.add_scalar("test/acc@5", top5, args.num_eval)
-
-                args.writer.add_scalar('precision/label0', bin_test['None/precision'][0], step)
-                args.writer.add_scalar('precision/label1', bin_test['None/precision'][1], step)
-                args.writer.add_scalar('precision/label2', bin_test['None/precision'][2], step)
-                args.writer.add_scalar('precision/label3', bin_test['None/precision'][3], step)
-
-                args.writer.add_scalar('recall/label0', bin_test['None/recall'][0], step)
-                args.writer.add_scalar('recall/label1', bin_test['None/recall'][1], step)
-                args.writer.add_scalar('recall/label2', bin_test['None/recall'][2], step)
-                args.writer.add_scalar('recall/label3', bin_test['None/recall'][3], step)
-
-                args.writer.add_scalar('f1/label0', bin_test['None/f1'][0], step)
-                args.writer.add_scalar('f1/label1', bin_test['None/f1'][1], step)
-                args.writer.add_scalar('f1/label2', bin_test['None/f1'][2], step)
-                args.writer.add_scalar('f1/label3', bin_test['None/f1'][3], step)
-
-                wandb.log({"test/loss": test_loss,
-                           "test/acc@1": top1,
-                           "test/acc@5": top5})
-
-                is_best = top1 > args.best_top1
-                if is_best:
-                    args.best_top1 = top1
-                    args.best_top5 = top5
-
-                logger.info(f"top-1 acc: {top1:.2f}")
-                logger.info(f"Best top-1 acc: {args.best_top1:.2f}")
-
-                save_checkpoint(args, {
-                    'step': step + 1,
-                    'teacher_state_dict': teacher_model.state_dict(),
-                    'best_top1': args.best_top1,
-                    'best_top5': args.best_top5,
-                    'teacher_optimizer': t_optimizer.state_dict(),
-                    'teacher_scheduler': t_scheduler.state_dict(),
-                    'teacher_scaler': t_scaler.state_dict(),
-                }, is_best)
-
-    if args.local_rank in [-1, 0]:
-        args.writer.add_scalar("result/test_acc@1", args.best_top1)
-        wandb.log({"result/test_acc@1": args.best_top1})
-    # finetune
-    ckpt_name = f'{args.save_path}/{args.name}_best.pth.tar'
-    loc = f'cuda:{args.gpu}'
-    checkpoint = torch.load(ckpt_name, map_location=loc)
-    logger.info(f"=> loading checkpoint '{ckpt_name}'")
-    finetune(args, labeled_loader, test_loader, teacher_model, criterion)
-    return
 
 def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
                teacher_model, student_model, avg_student_model, criterion,
@@ -486,9 +336,9 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
             pbar.close()
             if args.local_rank in [-1, 0]:
                 # save predictions to json file
-                logger.info("\n")
-                logger.info(all_train_predictions)
-                logger.info(all_train_actual_predictions)
+                # logger.info("\n")
+                # logger.info(all_train_predictions)
+                # logger.info(all_train_actual_predictions)
 
                 try:
                     with open(predictions_file, "r") as jsonFile:
@@ -569,18 +419,7 @@ def train_loop(args, labeled_loader, unlabeled_loader, test_loader,
     if args.local_rank in [-1, 0]:
         args.writer.add_scalar("result/test_acc@1", args.best_top1test)
         wandb.log({"result/test_acc@1": args.best_top1test})
-    # finetune
-    del t_scaler, t_scheduler, t_optimizer, teacher_model, unlabeled_loader
-    del s_scaler, s_scheduler, s_optimizer
-    ckpt_name = f'{args.save_path}/{args.name}_best.pth.tar'
-    loc = f'cuda:{args.gpu}'
-    checkpoint = torch.load(ckpt_name, map_location=loc)
-    logger.info(f"=> loading checkpoint '{ckpt_name}'")
-    if checkpoint['avg_state_dict'] is not None:
-        model_load_state_dict(student_model, checkpoint['avg_state_dict'])
-    else:
-        model_load_state_dict(student_model, checkpoint['student_state_dict'])
-    finetune(args, labeled_loader, test_loader, student_model, criterion)
+
     return
 
 
@@ -606,6 +445,7 @@ def compute_data(args, data, all_train_predictions, all_train_actual_predictions
         data[PSEUDO_LABELS].extend(all_pseudo_labels)
     return data
 
+
 def plot_metrics(args, test_loss, top1, top5, bin_test, step, evaluation_name):
     args.writer.add_scalar(evaluation_name + "/loss", test_loss, args.num_eval)
     args.writer.add_scalar(evaluation_name + "/acc@1", top1, args.num_eval)
@@ -619,6 +459,7 @@ def plot_metrics(args, test_loss, top1, top5, bin_test, step, evaluation_name):
 
     for label in range(args.num_classes):
         args.writer.add_scalar(evaluation_name + '_f1/label' + str(label), bin_test['None/f1'][label], step)
+
 
 def evaluate(args, test_loader, model, criterion, evaluation_name):
     outputs = []
@@ -669,7 +510,7 @@ def evaluate(args, test_loader, model, criterion, evaluation_name):
             'scores': b_metrics,
         }
         stats_file = os.path.dirname(args.stats_dir)
-        stats_file = os.path.join(stats_file, 'stats_file.json')
+        stats_file = os.path.join(stats_file, args.name.replace(' ', '_') + 'stats_file.json')
         with open(stats_file, 'w') as f:
             json.dump(stats, f)
 
@@ -834,6 +675,8 @@ def main():
     args.best_top5test = 0.
     args.metric = 0 # used for plateau lr
 
+    logger.info(f'stats dir: {args.stats_dir}')
+
     if args.local_rank != -1:
         args.gpu = args.local_rank
         torch.distributed.init_process_group(backend='nccl')
@@ -969,13 +812,11 @@ def main():
         return
 
     if args.evaluate:
+        logger.info('We\'re evaluating')
         del t_scaler, t_text_scheduler, t_text_optimizer, teacher_model, unlabeled_loader, labeled_loader
         del s_scaler, s_text_scheduler, s_text_optimizer
         evaluate(args, test_loader, student_model, criterion)
         return
-
-    if args.supervised:
-        train_teacher(args, labeled_loader, test_loader, teacher_model, criterion, t_text_optimizer, t_text_scheduler, t_scaler)
 
     teacher_model.zero_grad()
     student_model.zero_grad()
